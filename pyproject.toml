@@ -1,0 +1,174 @@
+[tool.poetry]
+name = "rag-at-scale"
+version = "0.1.0"
+description = "Scalable RAG Pipeline Project"
+authors = ["Harsh.Solanki <Harsh.Solanki@target.com>"]
+readme = "README.md"
+packages = [{include = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+tiktoken = "0.4.0"
+celery = {extras = ["redis"], version = "^5.3"}
+redis = "^5.0"
+pydantic = "^2.5"
+uvicorn = "^0.24"
+python-dotenv = "^1.0"
+langchain = "0.0.335"
+openai = "1.2.4"
+pandas = "2.1.0"
+pinecone-client = "2.2.2"
+requests = "2.31.0"
+tokenizers = "0.13.2"
+transformers = "4.27.3"
+pypdf = "3.9.1"
+unstructured = "0.7.7"
+starlette = "0.27.0"
+replicate = "0.13.0"
+boto3 = "1.28.81"
+beautifulsoup4 = "4.12.2"
+vecs = "0.4.2"
+fastapi = ">0.98.0"
+pylance = "0.8.21"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4"
+pytest-cov = "^4.1"
+mkdocs = "^1.5"
+mkdocs-material = "^9.5"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[[tool.poetry.source]]
+name = "target-pypi-proxy"
+url = "https://binrepo.target.com/artifactory/api/pypi/pypi-remote/simple"
+priority = "primary"
+
+[[tool.poetry.source]]
+name = "torch-source"
+url = "https://download.pytorch.org/whl/cpu"
+priority = "supplemental"
+
+[[tool.poetry.source]]
+name = "target-pypi-internal"
+url = "https://binrepo.target.com/artifactory/api/pypi/tgt-pypi/simple"
+priority = "supplemental"
+
+
+[[tool.poetry.source]]
+name = "idp-python"
+url = "https://binrepo.target.com/artifactory/api/pypi/idp-python"
+priority = "supplemental"
+
+
+[[tool.poetry.source]]
+name = "tgt-python"
+url = "https://binrepo.target.com/artifactory/api/pypi/tgt-python/simple"
+priority = "supplemental"
+
+[[tool.poetry.source]]
+name = "managed-pypi-genai-platform"
+url = "https://binrepo.target.com/artifactory/api/pypi/managed-pypi-genai-platform/simple"
+priority = "supplemental"
+
+[tool.pytest.ini_options]
+addopts = "--ignore=tests/unit/query_expansion --ignore=tests/integration/routers/test_tenants.py"
+asyncio_mode = "auto"
+
+
+[tool.black]
+line-length = 100
+
+[tool.ruff]
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".git",
+    ".ipynb_checkpoints",
+    ".mypy_cache",
+    ".pyenv",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".venv",
+    ".vscode",
+    "site-packages",
+    "venv",
+    "alembic",
+]
+
+# Same as Black.
+line-length = 100
+indent-width = 4
+
+# Assume Python 3.11
+target-version = "py311"
+
+[tool.ruff.lint]
+# Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
+# Unlike Flake8, Ruff doesn't enable pycodestyle warnings (`W`) or
+# McCabe complexity (`C901`) by default.
+select = ["E4", "E501", "E7", "E9", "F", "UP"]
+ignore = ["COM812", "F403", "UP007", "I001"]
+extend-select = ["I"]
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["E501", "F401", "I001"]
+unfixable = [
+    # Print statements
+    "T201",
+    # Noqa lines
+    "RUF100",
+]
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.coverage.run]
+disable_warnings = ['no-data-collected']
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
+
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+
+# Like Black, automatically detect the appropriate line ending.
+line-ending = "auto"
+
+# Enable auto-formatting of code examples in docstrings. Markdown,
+# reStructuredText code/literal blocks and doctests are all supported.
+#
+# This is currently disabled by default, but it is planned for this
+# to be opt-out in the future.
+docstring-code-format = false
+
+# Set the line length limit used when formatting code snippets in
+# docstrings.
+#
+# This only has an effect when the `docstring-code-format` setting is
+# enabled.
+docstring-code-line-length = "dynamic"
+
+
+[tool.ruff.lint.per-file-ignores]
+# Ignore `E402` (import violations) in all `__init__.py` files, and in `path/to/file.py`.
+"__init__.py" = ["E402", "F401"]
+
+[[tool.mypy.overrides]]
+module = ["tgt_measurement.internal.aml_metrics.influx", "pymilvus",
+    "apscheduler.schedulers.asyncio", "joblib", "platform_commons.*", "transformers"]
+ignore_missing_imports = true
+
+[tool.mypy]
+exclude = ['venv', 'tenants/tenant', 'api-spec']
+
+[tool.coverage.report]
+ignore_errors = true
