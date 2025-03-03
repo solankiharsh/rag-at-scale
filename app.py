@@ -1,7 +1,8 @@
 # src/app.py
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Body, FastAPI, HTTPException
 
+from src.pipeline.pipeline import Pipeline
 from src.schemas.pipeline_config_schema import PipelineConfigSchema
 from tasks import data_extraction_task
 
@@ -92,6 +93,31 @@ async def run_pipeline(pipeline_id: str, extract_type: str = "full"):
             f"'{extract_type}'. Task ID: {task.id}"
         )
     }
+
+# Search endpoint
+@app.post("/pipelines/{pipeline_id}/search")
+async def search_embedded_chunks(
+    pipeline_id: str,
+    query: str = Body(..., embed=True),
+    num_of_results: int = 3
+):
+    """
+    Searches the embedded chunks stored in the vector database for the given pipeline.
+    """
+    if pipeline_id not in pipeline_configs:
+        raise HTTPException(status_code=404, detail="Pipeline not found")
+    
+    # Create a Pipeline instance using the stored configuration
+    pipeline_config = pipeline_configs[pipeline_id]
+    pipeline = Pipeline(pipeline_config)
+    
+    # Use the sink's search functionality to query embedded chunks.
+    try:
+        search_results = pipeline.sink.search(query=query, size=num_of_results)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Search failed: {e}")
+    
+    return search_results
 
 if __name__ == "__main__":
     import uvicorn

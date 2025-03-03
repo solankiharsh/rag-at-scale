@@ -37,3 +37,15 @@ class ElasticsearchSink(VectorDBSink):
             actions.append(action)
         success, _ = helpers.bulk(self.client, actions)
         return success
+    
+    def search(self, query: str, size: int = 3):
+        # This is a simple search example using a match query on a field 'content'
+        body = {
+            "query": {
+                "match": {
+                    "content": query
+                }
+            },
+            "size": size
+        }
+        return self.client.search(index=self.index_name, body=body)
