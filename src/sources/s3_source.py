@@ -3,10 +3,11 @@ import os
 from typing import Generator, List
 
 import boto3
+
 from src.schemas.cloud_file_schema import CloudFileSchema
 from src.schemas.document_schema import DocumentSchema
 from src.schemas.source_config_schema import SourceConfigSchema
-from src.sources.source_connector import SourceConnector
+from src.Sources.source_connector import SourceConnector
 
 
 class S3SourceConnector(SourceConnector):
@@ -28,7 +29,8 @@ class S3SourceConnector(SourceConnector):
             's3',
             aws_access_key_id=self.aws_access_key_id,
             aws_secret_access_key=self.aws_secret_access_key,
-            endpoint_url=self.endpoint_url
+            endpoint_url=self.endpoint_url,
+            verify=False
         )
 
     def list_files_full(self) -> Generator[CloudFileSchema, None, None]:

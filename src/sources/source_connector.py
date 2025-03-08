@@ -17,7 +17,7 @@ class SourceConnector(ABC):
         source_type = source_config.type.lower()
         print(f"source_type: {source_type}")
         if source_type == "s3":
-            from src.sources.s3_source import S3SourceConnector
+            from src.Sources.s3_source import S3SourceConnector
             return S3SourceConnector(config=source_config)
         else:
             raise ValueError(f"Unsupported source type: {source_type}")

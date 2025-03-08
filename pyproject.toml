@@ -4,36 +4,126 @@ version = "0.1.0"
 description = "Scalable RAG Pipeline Project"
 authors = ["Harsh.Solanki <Harsh.Solanki@target.com>"]
 readme = "README.md"
+repository = "https://git.target.com/harsh/rag-at-scale"
 packages = [{include = "src"}]
+keywords = ["ragai", "ai tools", "data tools"]
+
 
 [tool.poetry.dependencies]
-python = "^3.10"
-tiktoken = "0.4.0"
-celery = {extras = ["redis"], version = "^5.3"}
-redis = "^5.0"
-pydantic = "^2.5"
-uvicorn = "^0.24"
-python-dotenv = "^1.0"
-langchain = "0.0.335"
-openai = "1.2.4"
-pandas = "2.1.0"
-pinecone-client = "2.2.2"
-requests = "2.31.0"
-tokenizers = "0.13.2"
-transformers = "4.27.3"
-pypdf = "3.9.1"
-unstructured = "0.7.7"
-starlette = "0.27.0"
-replicate = "0.13.0"
-boto3 = "1.28.81"
-beautifulsoup4 = "4.12.2"
-vecs = "0.4.2"
-fastapi = ">0.98.0"
-pylance = "0.8.21"
+python = "^3.11"
+fastapi = "0.111.0"
+ruff = "0.4.8"
+pydantic =  "2.10.4"
+loguru = "0.7.2"
+uvicorn = "0.32.0"
+python-dotenv = "1.0.1"
+elasticsearch = "8.13.0"
+langchain = "0.2.3"
+langchain-huggingface = "0.0.3"
+httpx = {extras = ["http2"], version = "^0.27.2"}
+h2 = "4.1.0"
+pdf2image = "1.17.0"
+pillow-heif = "0.15.0"
+spacy = "3.7.5"
+tiktoken = "0.7.0"
+requests = "2.32.3"
+types-requests = "2.32.0.20240602"
+langchain-community = "0.2.4"
+tenacity="8.5.0"
+boto3 = "1.34.123"
+boto3-stubs = "1.34.159"
+en_core_web_sm = {url ="https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl" }
+#en_core_web_md = {url ="https://github.com/explosion/spacy-models/releases/download/en_core_web_md-3.7.1/en_core_web_md-3.7.1-py3-none-any.whl" }
+numpy = "1.26.4"
+#numpy = [url = "https://binrepo.target.com/ui/repos/tree/General/pypi-remote-cache/3f/6b/5610004206cf7f8e7ad91c5a85a8c71b2f2f8051a0c0c4d5916b76d6cbb2/numpy-1.26.4-cp311-cp311-win_amd64.whl"]
+pypdf = "4.2.0"
+pandas = "2.2.2"
+distro = "1.9.0"
+python-multipart = "0.0.9"
+python-pptx = "0.6.23"
+h11 = "^0.14.0"
+langchain-openai = "0.1.8"
+tgt-certs = {version = "^2024.1.0", source = "tgt-python"}
+tgt-measurement = {version = "0.1.0", extras = ["influx"], source = "tgt-python"}
+starlette = "0.37.2"
+tensorflow = "2.18.0"
+scikit-learn = "1.5.0"
+matplotlib = "3.9.0"
+opencv-python-headless = "4.10.0.82"
+pandas-stubs = "^2.2.1.240316"
+types-tensorflow = "2.15.0.20240411"
+markdown = "3.6"
+tabulate = "0.9.0"
+nltk = "3.8.1"
+transformers = "4.41.2"
+torch = [
+    {version = "2.3.1", platform = "darwin", source="target-pypi-proxy"},
+    {version = "2.3.1", platform = "linux", source = "torch-source"},
+]
+sentence-transformers = "3.0.1"
+cryptography = "42.0.5"
+alembic = "1.14.0"
+mako = "1.3.8"
+sqlalchemy = {extras = ["asyncio"], version = "2.0.30"}
+psycopg2-binary = "2.9.9"
+unidecode = "1.3.8"
+asyncpg = "^0.29.0"
+backoff = "^2.2.1"
+confluent-kafka = "2.4.0"
+fastapi-cache2 = "0.2.2"
+pyyaml = "^6.0.1"
+pydantic-settings = "^2.3.3"
+annotated-types = "^0.7.0"
+pydantic-core = "2.27.2"
+apscheduler = "3.10.4"
+aiofiles = "24.1.0"
+pyjwt = "2.8.0"
+pymilvus = "2.5.3"
+types-aiofiles = "24.1.0.20240626"
+pytest-faker = "2.0.0"
+mypy-boto3 = "1.34.159"
+moto = "5.0.12"
+yarl = "1.13.1"
+pyinstrument = "5.0.0"
+elasticsearch-dsl = "^8.15.4"
+tgt-opentelemetry = {version = "0.3.6", source = "tgt-python"}
+opentelemetry-instrumentation-fastapi = {version = "0.50b0", source = "target-pypi-proxy"}
+opentelemetry-instrumentation-httpx = {version = "0.50b0", source = "target-pypi-proxy"}
+opentelemetry-instrumentation-sqlalchemy = {version = "0.50b0", source = "target-pypi-proxy"}
+opentelemetry-instrumentation-confluent-kafka = {version = "0.50b0", source = "target-pypi-proxy"}
+opentelemetry-instrumentation-botocore = {version = "0.50b0", source = "target-pypi-proxy"}
+opentelemetry-instrumentation-redis = {version = "0.50b0", source = "target-pypi-proxy"}
+opentelemetry-instrumentation-elasticsearch = {version = "0.50b0", source = "target-pypi-proxy"}
+opentelemetry-semantic-conventions = "0.50b0"
+platform-commons = [
+    {version = "0.6.17", platform = "darwin", source = "managed-pypi-genai-platform"},
+    {version = "0.6.17", platform = "linux", source = "managed-pypi-genai-platform"},
+]
 
+aioredis = "^2.0.1"
+redis = "^5.1.1"
+arq = "^0.26.1"
+httpcore = {extras = ["asyncio", "http2"], version = "^1.0.6"}
+gunicorn = "23.0.0"
+uvicorn-worker = "0.2.0"
+httptools = "0.6.4"
+orjson = "^3.10.12"
+pymupdf = "^1.25.1"
 [tool.poetry.group.dev.dependencies]
-pytest = "^7.4"
-pytest-cov = "^4.1"
+mypy = "1.9.0"
+black = "24.2.0"
+pytest = "8.3.2"
+pytest-asyncio = "0.24.0a1"
+pytest-mock = "3.12.0"
+pytest-recording = "0.13.1"
+mammoth = "1.7.0"
+filetype = "1.2.0"
+bs4 = "0.0.2"
+typing-extensions = { version = "4.12.2", source = "target-pypi-proxy" } #"^4.10.0"
+coverage = "7.5.3"
+types-beautifulsoup4 = "4.12.0.20240229"
+types-markdown = "3.6.0.20240316"
+types-confluent-kafka = "^1.2.0"
 mkdocs = "^1.5"
 mkdocs-material = "^9.5"
 

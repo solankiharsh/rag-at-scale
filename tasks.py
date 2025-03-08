@@ -7,7 +7,7 @@ from src.pipeline.pipeline import Pipeline
 from src.schemas.cloud_file_schema import CloudFileSchema
 from src.schemas.document_schema import DocumentSchema
 from src.schemas.source_config_schema import SourceConfigSchema
-from src.sources.source_connector import SourceConnector
+from src.Sources.source_connector import SourceConnector
 
 app = Celery('tasks', broker=config.REDIS_BROKER_URL)
 

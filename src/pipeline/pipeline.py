@@ -8,7 +8,7 @@ from src.schemas.document_schema import DocumentSchema
 from src.schemas.pipeline_config_schema import PipelineConfigSchema
 from src.schemas.vector_schema import VectorSchema
 from src.sinks.vector_db_sink import VectorDBSink
-from src.sources.source_connector import SourceConnector
+from src.Sources.source_connector import SourceConnector
 
 
 class Pipeline:
