@@ -3,11 +3,13 @@
 from celery import Celery
 
 from config import config
-from src.pipeline.pipeline import Pipeline
+from src.Pipelines.pipeline import Pipeline
 from src.schemas.cloud_file_schema import CloudFileSchema
 from src.schemas.document_schema import DocumentSchema
 from src.schemas.source_config_schema import SourceConfigSchema
+from src.Shared.RagDocument import RagDocument
 from src.Sources.source_connector import SourceConnector
+from utils.platform_commons.logger import logger
 
 app = Celery('tasks', broker=config.REDIS_BROKER_URL)
 
@@ -75,9 +77,11 @@ def data_processing_task(
 @app.task
 def data_embed_ingest_task(pipeline_config_dict: dict, chunks_dicts: list[dict]):
     pipeline = Pipeline.create_pipeline(pipeline_config_dict)
-    chunks: list[DocumentSchema] = [
-        DocumentSchema.as_file(chunk_dict) for chunk_dict in chunks_dicts
+    chunks: list[RagDocument] = [
+        RagDocument.as_file(chunk_dict) for chunk_dict in chunks_dicts
     ]
+    
+    logger.info(f"chunks: {chunks}")
 
     vectors_written = pipeline.embed_and_ingest(chunks) # Now pipeline handles embed and ingest
     print(f"Finished embedding and storing {vectors_written} vectors")

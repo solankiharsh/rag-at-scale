@@ -1,8 +1,8 @@
 # src/embeddings/embed_model.py
 from abc import ABC, abstractmethod
 
-from src.schemas.document_schema import DocumentSchema
 from src.schemas.embed_config_schema import EmbedConfigSchema
+from src.Shared.RagDocument import RagDocument
 
 
 class EmbedModel(ABC):
@@ -20,7 +20,7 @@ class EmbedModel(ABC):
             raise ValueError(f"Unsupported embedding model: {model_name}")
 
     @abstractmethod
-    async def embed(self, documents: list[DocumentSchema]) -> tuple[list[list[float]], dict]:
+    async def embed(self, documents: list[RagDocument]) -> tuple[list[list[float]], dict]:
         """
         Embeds documents and returns a tuple:
         - A list of embedding vectors (one per document)

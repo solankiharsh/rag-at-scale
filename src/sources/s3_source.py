@@ -56,10 +56,12 @@ class S3SourceConnector(SourceConnector):
         self.s3_client.download_file(self.bucket_name, cloudFile.name, local_file_path)
         yield local_file_path
 
-    def load_data(self, file: object, cloud_file: CloudFileSchema) -> Generator[DocumentSchema, None, None]:
+    def load_data(
+        self, file: object, cloud_file: CloudFileSchema
+    ) -> Generator[DocumentSchema, None, None]:
         # Read the file and create a DocumentSchema using the provided cloud_file info
         try:
-            with open(file, 'r') as f:  # Assuming text files for simplicity
+            with open(file) as f:  # Assuming text files for simplicity
                 content = f.read()
                 yield DocumentSchema(id=cloud_file.id, content=content, metadata=cloud_file.metadata)
         except Exception as e:
@@ -74,5 +76,11 @@ class S3SourceConnector(SourceConnector):
             chunk_content = '.'.join(sentences[i:i + chunk_size])
             if chunk_content.strip():  # Avoid empty chunks
                 chunk_id = f"{document.id}-chunk-{i}"  # Unique ID for chunk
-                chunks.append(DocumentSchema(id=chunk_id, content=chunk_content, metadata=document.metadata))
+                chunks.append(
+                    DocumentSchema(
+                        id=chunk_id,
+                        content=chunk_content,
+                        metadata=document.metadata
+                    )
+                )
         yield chunks
