@@ -1,10 +1,12 @@
 # src/embeddings/ham_embed_model.py
 
 import httpx
+
 from src.embeddings.embed_model import EmbedModel
+
 # Import your async get_embeddings function from its module
 from src.embeddings.embedding_service import get_embeddings
-from src.schemas.document_schema import DocumentSchema
+from src.Shared.RagDocument import RagDocument
 
 
 # Dummy User class; replace with your actual User model
@@ -16,8 +18,8 @@ class User:
 class HamEmbedModel(EmbedModel):
     
     
-    async def embed(self, documents: list[DocumentSchema]) -> tuple[list[list[float]], dict]:
-        # Extract the text from documents. Assume DocumentSchema has a 'text' attribute.
+    async def embed(self, documents: list[RagDocument]) -> tuple[list[list[float]], dict]:
+        # Extract the text from documents. Assume RagDocument has a 'text' attribute.
         queries = [doc.content for doc in documents]
         
         # For this example, create a dummy user.

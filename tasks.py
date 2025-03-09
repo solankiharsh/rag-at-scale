@@ -5,7 +5,6 @@ from celery import Celery
 from config import config
 from src.Pipelines.pipeline import Pipeline
 from src.schemas.cloud_file_schema import CloudFileSchema
-from src.schemas.document_schema import DocumentSchema
 from src.schemas.source_config_schema import SourceConfigSchema
 from src.Shared.RagDocument import RagDocument
 from src.Sources.source_connector import SourceConnector
@@ -37,20 +36,39 @@ def data_processing_task(
     source_config_dict: dict,
     cloud_file_dict: dict
 ):
-    pipeline = Pipeline.create_pipeline(pipeline_config_dict)
-    print(f"source_config_dict:> {source_config_dict}")
-    source = SourceConnector.create_source(SourceConfigSchema(**source_config_dict))
-    cloud_file = CloudFileSchema(**cloud_file_dict)
+    try:
+        logger.info("Starting data processing task")
+        pipeline = Pipeline.create_pipeline(pipeline_config_dict)
+        logger.debug(f"Pipeline initialized with config: {pipeline_config_dict}")
 
-    batched_chunks: list[DocumentSchema] = []
-    batch_number = 0
-    for chunks in pipeline.process_document(source, cloud_file): # Now process_document yields chunks
-        batched_chunks.extend(chunks)
-        if len(batched_chunks) > 200:
-            print(
-                f"Sending batch #{batch_number} for file: {cloud_file.id} "
-                "to data_embed_ingest_task"
-            )
+        logger.debug(f"Source config: {source_config_dict}")
+        source = SourceConnector.create_source(SourceConfigSchema(**source_config_dict))
+        cloud_file = CloudFileSchema(**cloud_file_dict)
+
+        batched_chunks: list[RagDocument] = []
+        batch_number = 0
+        
+        logger.info(f"Processing document {cloud_file.id}")
+        for chunks in pipeline.process_document(source, cloud_file):
+            batched_chunks.extend(chunks)
+            logger.debug(f"Collected {len(batched_chunks)} chunks so far")
+
+            if len(batched_chunks) > 200:
+                logger.info(
+                    f"Sending batch #{batch_number} for file: {cloud_file.id} to ingestion task"
+                )
+                data_embed_ingest_task.apply_async(
+                    kwargs={
+                        "pipeline_config_dict": pipeline_config_dict,
+                        "chunks_dicts": [chunk.to_json() for chunk in batched_chunks]
+                    },
+                    queue="data_embed_ingest"
+                )
+                batched_chunks = []
+                batch_number += 1
+
+        if batched_chunks:
+            logger.info(f"Sending final batch #{batch_number} for file: {cloud_file.id}")
             data_embed_ingest_task.apply_async(
                 kwargs={
                     "pipeline_config_dict": pipeline_config_dict,
@@ -58,22 +76,12 @@ def data_processing_task(
                 },
                 queue="data_embed_ingest"
             )
-            batched_chunks = []
-            batch_number += 1
+        logger.info("Data processing task completed successfully")
 
-    if len(batched_chunks) > 0:
-        print(
-            f"Sending final batch #{batch_number} for file: {cloud_file.id} "
-            "to data_embed_ingest_task"
-        )
-        data_embed_ingest_task.apply_async(
-            kwargs={
-                "pipeline_config_dict": pipeline_config_dict,
-                "chunks_dicts": [chunk.to_json() for chunk in batched_chunks]
-            },
-            queue="data_embed_ingest"
-        )
-
+    except Exception as e:
+        logger.error(f"Error in data_processing_task: {e}")
+        raise
+    
 @app.task
 def data_embed_ingest_task(pipeline_config_dict: dict, chunks_dicts: list[dict]):
     pipeline = Pipeline.create_pipeline(pipeline_config_dict)
@@ -86,38 +94,3 @@ def data_embed_ingest_task(pipeline_config_dict: dict, chunks_dicts: list[dict])
     vectors_written = pipeline.embed_and_ingest(chunks) # Now pipeline handles embed and ingest
     print(f"Finished embedding and storing {vectors_written} vectors")
 
-# --- Example Task Trigger (for testing, can be moved to API) ---
-if __name__ == '__main__':
-    # Example Pipeline Configuration (Load from DB or config file in real app)
-    pipeline_config_data = {
-        "id": "pipeline-1",
-        "name": "Document Pipeline",
-        "sources": [
-            {
-                "name": "s3-source-1",
-                "type": "s3",
-                "settings": {
-                    "bucket_name": "your-s3-bucket-name", # Replace with your bucket
-                    "prefix": "documents/"
-                }
-            }
-        ],
-        "embed_model": {
-            "model_name": "sentence-transformers",
-            "settings": {"model_name": config.EMBEDDING_MODEL_NAME} # Use config for model name
-        },
-        "sink": {
-            "type": "pinecone",
-            "settings": {
-                "api_key": config.VECTOR_DB_API_KEY, # Use config for API key
-                "environment": config.VECTOR_DB_ENVIRONMENT, # Use config for environment
-                "index_name": config.VECTOR_DB_INDEX_NAME # Use config for index name
-            }
-        }
-    }
-
-    print("Triggering Data Extraction Task (Full Sync)")
-    data_extraction_task.apply_async(
-        kwargs={"pipeline_config_dict": pipeline_config_data, "extract_type": "full"},
-        queue="data_extraction"
-    )

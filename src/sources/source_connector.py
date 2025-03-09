@@ -1,10 +1,10 @@
 # src/sources/source_connector.py
 from abc import ABC, abstractmethod
-from typing import Generator, List
+from typing import Generator
 
 from src.schemas.cloud_file_schema import CloudFileSchema
-from src.schemas.document_schema import DocumentSchema
 from src.schemas.source_config_schema import SourceConfigSchema
+from src.Shared.RagDocument import RagDocument
 
 
 class SourceConnector(ABC):
@@ -39,16 +39,21 @@ class SourceConnector(ABC):
         pass
 
     @abstractmethod
-    def download_files(self, cloudFile: CloudFileSchema) -> Generator[object, None, None]: # object can be LocalFile representation
+    def download_files(
+        self, cloud_file: CloudFileSchema
+    ) -> Generator[object, None, None]:  # object can be LocalFile representation
         """Downloads files to local storage. Yields local file paths/objects."""
         pass
 
     @abstractmethod
-    def load_data(self, file: object) -> Generator[DocumentSchema, None, None]: # file is the local file object
-        """Loads data from a local file and yields RagDocumentSchema objects."""
+    def load_data(
+        self, local_file: object, cloud_file: CloudFileSchema
+    ) -> Generator[RagDocument, None, None]:
+        """Loads data from a local file and yields RagDocument objects."""
         pass
 
+
     @abstractmethod
-    def chunk_data(self, document: DocumentSchema) -> Generator[List[DocumentSchema], None, None]:
-        """Chunks a document into smaller RagDocumentSchema objects."""
+    def chunk_data(self, document: RagDocument) -> Generator[list[RagDocument], None, None]:
+        """Chunks a document into smaller RagDocument objects."""
         pass

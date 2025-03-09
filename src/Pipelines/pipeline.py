@@ -15,21 +15,16 @@ class Pipeline:
     def __init__(self, pipeline_config: PipelineConfigSchema):
         self.id = pipeline_config.id
         self.name = pipeline_config.name
+        logger.info(f"pipeline_config.sources: {pipeline_config.sources}")
         self.sources = [
             SourceConnector.create_source(source_config)
             for source_config in pipeline_config.sources
         ]
         self.embed = EmbedModel.create_embed_model(pipeline_config.embed_model)
-        logger.info(f"pipeline_config: {pipeline_config}")
-        # Create sink using the new SinkConnectorFactory (which returns a SinkConnector instance)
+        
         self.sink = SinkConnectorFactory.get_sink(
             pipeline_config.sink.type, pipeline_config.sink.settings
         )
-        
-        logger.info(f"self.sink: {self.sink}")
-
-        
-        # self.sink = VectorDBSink.create_sink(pipeline_config.sink)
         self.config = pipeline_config
 
     @staticmethod
@@ -51,16 +46,24 @@ class Pipeline:
                     yield source, file
 
     def process_document(self, source: SourceConnector, cloud_file):
-        for local_file in source.download_files(cloudFile=cloud_file):
-            for document in source.load_data(file=local_file, cloud_file=cloud_file):
+        logger.info(f"Starting document processing for: {cloud_file.id} ({cloud_file.name})")
+        
+        for local_file in source.download_files(cloud_file=cloud_file):
+            logger.info(f"Downloaded file locally: {local_file}")
+            
+            for document in source.load_data(local_file=local_file, cloud_file=cloud_file):
                 yield from source.chunk_data(document=document)
+
+
 
     def embed_and_ingest(self, chunks: list[RagDocument]):
         logger.info(f"Starting embedding for {len(chunks)} documents.")
         
         # Ensure embed object exists
         if not hasattr(self, 'embed') or not callable(getattr(self.embed, 'embed', None)):
-            raise AttributeError("'Pipeline' object has no attribute 'embed' or 'embed' is not callable.")
+            raise AttributeError(
+                "'Pipeline' object has no attribute 'embed' or 'embed' is not callable."
+            )
 
         # Run the asynchronous embed function and wait for the result
         vector_embeddings, embeddings_info = asyncio.run(self.embed.embed(documents=chunks))

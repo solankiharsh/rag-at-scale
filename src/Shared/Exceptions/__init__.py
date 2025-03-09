@@ -170,6 +170,9 @@ class WeaviateIndexInfoException(Exception):
     """Raised if getting index info from Weaviate fails"""
     pass
 
+class S3ConnectionException(Exception):
+    pass
+
 class WeaviateQueryException(Exception):
     """Raised if querying Weaviate fails"""
     pass
