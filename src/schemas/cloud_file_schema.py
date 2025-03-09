@@ -9,3 +9,4 @@ class CloudFileSchema(BaseModel):
     name: str
     path: str
     metadata: Optional[dict] = None
+    type: Optional[str] = None

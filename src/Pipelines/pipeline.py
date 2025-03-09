@@ -1,11 +1,15 @@
 # src/pipeline/pipeline.py
 
 import asyncio
+import os
 from asyncio.log import logger
 
 from src.embeddings.embed_model import EmbedModel
+from src.Loaders.LoaderFactory import LoaderFactory
 from src.ModelFactories.SinkConnectorFactory import SinkConnectorFactory
+from src.schemas.cloud_file_schema import CloudFileSchema
 from src.schemas.pipeline_config_schema import PipelineConfigSchema
+from src.Shared.LocalFile import LocalFile
 from src.Shared.RagDocument import RagDocument
 from src.Shared.RagVector import RagVector
 from src.Sources.source_connector import SourceConnector
@@ -45,14 +49,54 @@ class Pipeline:
                 for file in source.list_files_delta(last_run = last_extraction):
                     yield source, file
 
-    def process_document(self, source: SourceConnector, cloud_file):
+    def process_document(self, source: SourceConnector, cloud_file: CloudFileSchema):
         logger.info(f"Starting document processing for: {cloud_file.id} ({cloud_file.name})")
         
         for local_file in source.download_files(cloud_file=cloud_file):
             logger.info(f"Downloaded file locally: {local_file}")
-            
-            for document in source.load_data(local_file=local_file, cloud_file=cloud_file):
-                yield from source.chunk_data(document=document)
+
+            # Handle file object creation
+            try:
+                # Handle both dict and non-dict file representations
+                if isinstance(local_file, dict):
+                    file_obj = LocalFile.as_file(local_file)
+                    logger.info(f"Converted local file to LocalFile object: {file_obj}")
+
+                elif isinstance(local_file, str):
+                    logger.warning(
+                        f"Received file as a string. Wrapping in a dictionary: {local_file}"
+                    )
+                    metadata = cloud_file.metadata if cloud_file.metadata else {}
+                    file_obj = LocalFile.as_file({
+                        "file_path": local_file,
+                        "metadata": metadata,
+                        "type": os.path.splitext(local_file)[1],
+                        "id": cloud_file.id
+                    })
+
+                else:
+                    logger.error(
+                        f"Invalid local_file type: {type(local_file)} with value: {local_file}"
+                    )
+                    raise TypeError("local_file must be a dictionary or file path string")
+                
+                # Extract file extension
+                file_path = local_file if isinstance(local_file, str) else file_obj.file_path
+                file_extension = os.path.splitext(file_path)[1]
+                file_extension = file_extension.lstrip('.').lower() or "unknown"
+                logger.info(f"Detected file extension: {file_extension}")
+                
+                loader = LoaderFactory.get_loader(file_extension, cloud_file.metadata or {})
+                logger.info(f"Using loader: {loader.loader_name}")
+
+                # Load and process documents
+                for document in loader.load(file=file_obj):
+                    logger.info(f"Loaded document with ID: {document.id}")
+                    yield from source.chunk_data(document=document)
+
+            except Exception as e:
+                logger.error(f"Error while processing document: {e}", exc_info=True)
+                raise
 
 
 

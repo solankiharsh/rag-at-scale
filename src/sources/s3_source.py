@@ -71,30 +71,49 @@ class S3SourceConnector(SourceConnector):
                 f"Connection to S3 failed, check key and key ID. See Exception: {e}"
             )
         return True
+    
+    def get_file_metadata(self, key: str) -> CloudFileSchema:
+        try:
+            response = self.s3_client.head_object(Bucket=self.bucket_name, Key=key)
+            file_type = response.get('ContentType')
+            return CloudFileSchema(
+                file_name=key,
+                file_size=response['ContentLength'],
+                file_checksum=response['ETag'].strip('"'),
+                file_type=file_type
+            )
+        except Exception as e:
+            logger.error(f"Error fetching metadata for {key}: {str(e)}")
+            raise
 
     def list_files_full(self) -> Generator[CloudFileSchema, None, None]:
-        prefix = self.prefix or ""  # Use empty string if prefix is None
+        prefix = self.prefix or ""
         logger.info(f"Listing files in bucket {self.bucket_name} with prefix '{prefix}'")
-        
+
         bucket = self.s3_resource.Bucket(self.bucket_name)
         logger.info(f"bucket: {bucket}")
+
         for obj in bucket.objects.filter(Prefix=prefix):
-            logger.info(f"obj: {obj}")
+            logger.info(f"Found object: {obj.key}")
+
             metadata = {"last_modified": obj.last_modified}
-            logger.info(f"metadata: {metadata}")
+            logger.debug(f"Initial metadata: {metadata}")
+
             if hasattr(self.selector, "to_metadata") and "metadata" in self.selector.to_metadata:
                 additional_metadata = self.client.head_object(
                     Bucket=self.bucket_name, Key=obj.key
                 )["Metadata"]
                 metadata.update(additional_metadata)
 
-            logger.info(f"Found file: {obj.key}")
+            logger.info(f"Final metadata for {obj.key}: {metadata}")
+
             yield CloudFileSchema(
                 id=obj.key,
                 name=obj.key,
                 path=f"s3://{self.bucket_name}/{obj.key}",
                 metadata=metadata
             )
+
 
 
     def list_files_delta(self, last_run: datetime) -> Generator[CloudFileSchema, None, None]:

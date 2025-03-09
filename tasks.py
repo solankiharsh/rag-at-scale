@@ -41,14 +41,22 @@ def data_processing_task(
         pipeline = Pipeline.create_pipeline(pipeline_config_dict)
         logger.debug(f"Pipeline initialized with config: {pipeline_config_dict}")
 
-        logger.debug(f"Source config: {source_config_dict}")
         source = SourceConnector.create_source(SourceConfigSchema(**source_config_dict))
+        logger.debug(f"Source config: {source_config_dict}")
+        
+        # Validate and log cloud file
         cloud_file = CloudFileSchema(**cloud_file_dict)
+        logger.info(f"Validated cloud file: {cloud_file}")
 
         batched_chunks: list[RagDocument] = []
         batch_number = 0
         
         logger.info(f"Processing document {cloud_file.id}")
+        logger.info(f"Processing document {cloud_file.metadata}")
+        logger.info(f"Processing document {cloud_file.name}")
+        logger.info(f"Processing document {cloud_file.path}")
+        logger.info(f"Processing document {cloud_file.type}")
+        
         for chunks in pipeline.process_document(source, cloud_file):
             batched_chunks.extend(chunks)
             logger.debug(f"Collected {len(batched_chunks)} chunks so far")
@@ -76,6 +84,7 @@ def data_processing_task(
                 },
                 queue="data_embed_ingest"
             )
+            
         logger.info("Data processing task completed successfully")
 
     except Exception as e:
