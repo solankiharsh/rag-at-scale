@@ -3,7 +3,7 @@
 from celery import Celery
 
 from config import config
-from src.Pipelines.pipeline import Pipeline
+from src.Pipelines.Pipeline import Pipeline
 from src.Shared.CloudFile import CloudFileSchema
 from src.Shared.RagDocument import RagDocument
 from src.Shared.source_config_schema import SourceConfigSchema
@@ -13,8 +13,6 @@ from utils.platform_commons.logger import logger
 app = Celery("tasks", broker=config.REDIS_BROKER_URL)
 
 # --- Task Definitions ---
-
-
 @app.task
 def data_extraction_task(pipeline_config_dict: dict, extract_type: str, last_extraction=None):
     pipeline = Pipeline.create_pipeline(pipeline_config_dict)

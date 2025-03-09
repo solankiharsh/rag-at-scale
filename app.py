@@ -2,7 +2,7 @@
 
 from fastapi import Body, FastAPI, HTTPException
 
-from src.Pipelines.pipeline import Pipeline
+from src.Pipelines.Pipeline import Pipeline
 from src.Shared.pipeline_config_schema import PipelineConfigSchema
 from tasks import data_extraction_task
 
