@@ -1,5 +1,3 @@
-
-
 from config import Config
 
 from platform_commons.metrics import Metrics

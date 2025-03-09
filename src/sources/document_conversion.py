@@ -5,9 +5,13 @@ from io import BytesIO
 
 from celery.result import AsyncResult
 from fastapi import HTTPException
-from src.Shared.ConversionModels import (BatchConversionJobResult,
-                                         ConversationJobResult,
-                                         ConversionResult, ImageData)
+
+from src.Shared.ConversionModels import (
+    BatchConversionJobResult,
+    ConversationJobResult,
+    ConversionResult,
+    ImageData,
+)
 
 logging.basicConfig(level=logging.INFO)
 IMAGE_RESOLUTION_SCALE = 4
@@ -31,12 +35,9 @@ class DocumentConversionBase(ABC):
 
 
 class DoclingDocumentConversion(DocumentConversionBase):
-    def _setup_pipeline_options(
-        self, extract_tables: bool, image_resolution_scale: int
-    ):
+    def _setup_pipeline_options(self, extract_tables: bool, image_resolution_scale: int):
         # Lazy import pipeline options and OCR options
-        from docling.datamodel.pipeline_options import (EasyOcrOptions,
-                                                        PdfPipelineOptions)
+        from docling.datamodel.pipeline_options import EasyOcrOptions, PdfPipelineOptions
 
         artifacts_path = "/Users/Z0084K9/Downloads/docling-models"
         pipeline_options = PdfPipelineOptions(artifacts_path=artifacts_path)
@@ -59,7 +60,7 @@ class DoclingDocumentConversion(DocumentConversionBase):
 
         for element, _level in conv_res.document.iterate_items():
             # Use tuple for union check
-            if isinstance(element, (TableItem, PictureItem)) and element.image:
+            if isinstance(element, TableItem | PictureItem) and element.image:
                 img_buffer = BytesIO()
                 element.image.pil_image.save(img_buffer, format="PNG")
 
@@ -94,8 +95,7 @@ class DoclingDocumentConversion(DocumentConversionBase):
 
         # Lazy import the document converter and related classes
         from docling.datamodel.base_models import DocumentStream, InputFormat
-        from docling.document_converter import (DocumentConverter,
-                                                PdfFormatOption)
+        from docling.document_converter import DocumentConverter, PdfFormatOption
 
         pipeline_options = self._setup_pipeline_options(
             extract_tables=extract_tables, image_resolution_scale=image_resolution_scale
@@ -104,7 +104,9 @@ class DoclingDocumentConversion(DocumentConversionBase):
             format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)}
         )
 
-        conv_res = doc_converter.convert(DocumentStream(name=filename, stream=file), raises_on_error=False)
+        conv_res = doc_converter.convert(
+            DocumentStream(name=filename, stream=file), raises_on_error=False
+        )
         doc_filename = conv_res.input.file.stem
 
         if conv_res.errors:
@@ -125,26 +127,38 @@ class DoclingDocumentConversion(DocumentConversionBase):
                 content = file.read().decode("utf-8")
                 results.append(ConversionResult(filename=filename, markdown=content, images=[]))
             else:
-                pipeline_options = self._setup_pipeline_options(extract_tables, image_resolution_scale)
-                from docling.datamodel.base_models import (DocumentStream,
-                                                           InputFormat)
-                from docling.document_converter import (DocumentConverter,
-                                                        PdfFormatOption)
+                pipeline_options = self._setup_pipeline_options(
+                    extract_tables, image_resolution_scale
+                )
+                from docling.datamodel.base_models import DocumentStream, InputFormat
+                from docling.document_converter import DocumentConverter, PdfFormatOption
 
                 doc_converter = DocumentConverter(
-                    format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)}
+                    format_options={
+                        InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+                    }
                 )
 
-                conv_res = doc_converter.convert(DocumentStream(name=filename, stream=file), raises_on_error=False)
+                conv_res = doc_converter.convert(
+                    DocumentStream(name=filename, stream=file), raises_on_error=False
+                )
                 doc_filename = conv_res.input.file.stem
 
                 if conv_res.errors:
-                    logging.error(f"Failed to convert {filename}: {conv_res.errors[0].error_message}")
-                    results.append(ConversionResult(filename=doc_filename, error=conv_res.errors[0].error_message))
+                    logging.error(
+                        f"Failed to convert {filename}: {conv_res.errors[0].error_message}"
+                    )
+                    results.append(
+                        ConversionResult(
+                            filename=doc_filename, error=conv_res.errors[0].error_message
+                        )
+                    )
                     continue
 
                 content_md, images = self._process_document_images(conv_res)
-                results.append(ConversionResult(filename=doc_filename, markdown=content_md, images=images))
+                results.append(
+                    ConversionResult(filename=doc_filename, markdown=content_md, images=images)
+                )
         return results
 
 
@@ -159,7 +173,9 @@ class DocumentConverterService:
             raise HTTPException(status_code=500, detail=result.error)
         return result
 
-    def convert_documents(self, documents: list[tuple[str, BytesIO]], **kwargs) -> list[ConversionResult]:
+    def convert_documents(
+        self, documents: list[tuple[str, BytesIO]], **kwargs
+    ) -> list[ConversionResult]:
         documents = [(filename, BytesIO(file)) for filename, file in documents]
         return self.document_converter.convert_batch(documents, **kwargs)
 
@@ -168,7 +184,9 @@ class DocumentConverterService:
             document = (document[0], BytesIO(document[1]))
         return self.document_converter.convert(document, **kwargs)
 
-    def convert_documents_task(self, documents: list[tuple[str, bytes]], **kwargs) -> list[ConversionResult]:
+    def convert_documents_task(
+        self, documents: list[tuple[str, bytes]], **kwargs
+    ) -> list[ConversionResult]:
         documents = [(filename, BytesIO(file)) for filename, file in documents]
         return self.document_converter.convert_batch(documents, **kwargs)
 
@@ -186,7 +204,9 @@ class DocumentConverterService:
             result = task.get()
             if result.get("error"):
                 return ConversationJobResult(job_id=job_id, status="FAILURE", error=result["error"])
-            return ConversationJobResult(job_id=job_id, status="SUCCESS", result=ConversionResult(**result))
+            return ConversationJobResult(
+                job_id=job_id, status="SUCCESS", result=ConversionResult(**result)
+            )
         else:
             return ConversationJobResult(job_id=job_id, status="FAILURE", error=str(task.result))
 
@@ -208,8 +228,11 @@ class DocumentConverterService:
                     job_result = ConversationJobResult(status="FAILURE", error=result["error"])
                 else:
                     job_result = ConversationJobResult(
-                        status="SUCCESS", result=ConversionResult(**result).model_dump(exclude_unset=True)
+                        status="SUCCESS",
+                        result=ConversionResult(**result).model_dump(exclude_unset=True),
                     )
                 job_results.append(job_result)
-            return BatchConversionJobResult(job_id=job_id, status="SUCCESS", conversion_results=job_results)
+            return BatchConversionJobResult(
+                job_id=job_id, status="SUCCESS", conversion_results=job_results
+            )
         return BatchConversionJobResult(job_id=job_id, status="FAILURE", error=str(task.result))

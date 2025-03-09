@@ -1,5 +1,6 @@
 import json
-from typing import Generator, List, Optional
+from collections.abc import Generator
+from typing import Optional
 
 from pydantic import Field
 
@@ -13,47 +14,49 @@ class JSONLoader(Loader):
     """
     JSON Loader
 
-    A class for loading and processing JSON data. This loader is tailored for handling JSON files, offering flexibility in how JSON data is ingested and used in various applications.
+    A class for loading and processing JSON data. This loader is tailored for handling JSON files,
+    offering flexibility in how JSON data is ingested and used in various applications.
 
     Attributes:
     -----------
     id_key : Optional[str]
-        An optional ID key for identifying unique records in the JSON data. If specified, it is used to denote a unique identifier within the JSON structure.
+        An optional ID key for identifying unique records in the JSON data.
+        If specified, it is used to denote a unique identifier within the JSON structure.
 
     selector : Optional[Selector]
-        An optional Selector object used to define criteria for selecting, embedding, or modifying metadata in the JSON data. Default is a Selector with empty 'to_embed' and 'to_metadata' lists.
+        An optional Selector object used to define criteria for selecting, embedding,
+        or modifying metadata in the JSON data. Default is a Selector with empty
+        'to_embed' and 'to_metadata' lists.
     """
 
-    id_key: Optional[str] = Field('id', description="Optional ID key.")
+    id_key: Optional[str] = Field("id", description="Optional ID key.")
 
-    selector: Optional[Selector] = Field(Selector(to_embed=[], to_metadata=[]), description="Selector for loader metadata")
+    selector: Optional[Selector] = Field(
+        Selector(to_embed=[], to_metadata=[]), description="Selector for loader metadata"
+    )
 
     @property
     def loader_name(self) -> str:
         return "JSONLoader"
 
     @property
-    def required_properties(self) -> List[str]:
+    def required_properties(self) -> list[str]:
         return []
 
     @property
-    def optional_properties(self) -> List[str]:
+    def optional_properties(self) -> list[str]:
         return ["id_key"]
 
     @property
-    def loader_name(self) -> str:
-        return "JSONLoader"
-    
-    @property
-    def available_metadata(self) -> List[str]:
+    def available_metadata(self) -> list[str]:
         return ["custom"]
 
     @property
-    def available_content(self) -> List[str]:
+    def available_content(self) -> list[str]:
         return ["custom"]
-    
+
     def config_validation(self) -> bool:
-        return True   
+        return True
 
     def load(self, file: LocalFile) -> Generator[RagDocument, None, None]:
         """Load data into Document objects."""
@@ -61,7 +64,7 @@ class JSONLoader(Loader):
 
         json_data = None
         if file.file_path:
-            with open(file.file_path, 'r') as json_file:
+            with open(file.file_path) as json_file:
                 json_data = json.load(json_file)
         elif file.in_mem_data:
             json_data = json.loads(file.in_mem_data)
@@ -70,9 +73,9 @@ class JSONLoader(Loader):
             processed_json = self.process_item(item=json_data, id_key=id_key)
 
             for item in processed_json:
-                content = ''.join(item['data'])
-                metadata: dict = item['metadata']
-                document_id = item['id']
+                content = "".join(item["data"])
+                metadata: dict = item["metadata"]
+                document_id = item["id"]
                 metadata.update(file.metadata)
                 yield RagDocument(content=content, metadata=metadata, id=document_id)
 
@@ -86,17 +89,39 @@ class JSONLoader(Loader):
             result = []
             for key, value in item.items():
                 new_prefix = f"{prefix}.{key}" if prefix else key
-                new_document_id = f"{item.get(id_key, '')}.{new_prefix}" if id_key in item else new_prefix
-                if self.selector.to_embed is None or new_prefix in self.selector.to_embed or not self.selector.to_embed:
-                    result.extend(self.process_item(item=value, prefix=new_prefix, metadata=new_metadata, document_id=new_document_id, id_key=id_key))
+                new_document_id = (
+                    f"{item.get(id_key, '')}.{new_prefix}" if id_key in item else new_prefix
+                )
+                if (
+                    self.selector.to_embed is None
+                    or new_prefix in self.selector.to_embed
+                    or not self.selector.to_embed
+                ):
+                    result.extend(
+                        self.process_item(
+                            item=value,
+                            prefix=new_prefix,
+                            metadata=new_metadata,
+                            document_id=new_document_id,
+                            id_key=id_key,
+                        )
+                    )
             return result
         elif isinstance(item, list):
             result = []
             for value in item:
-                result.extend(self.process_item(item=value, prefix=prefix, metadata=metadata, document_id=document_id, id_key=id_key))
+                result.extend(
+                    self.process_item(
+                        item=value,
+                        prefix=prefix,
+                        metadata=metadata,
+                        document_id=document_id,
+                        id_key=id_key,
+                    )
+                )
             return result
         else:
-            return [{'data': [f"{item}"], 'metadata': metadata, 'id': document_id or prefix}]
+            return [{"data": [f"{item}"], "metadata": metadata, "id": document_id or prefix}]
 
-    def extract_metadata(self, item: dict, metadata_keys: List[str]) -> dict:
+    def extract_metadata(self, item: dict, metadata_keys: list[str]) -> dict:
         return {key: item[key] for key in metadata_keys if key in item}

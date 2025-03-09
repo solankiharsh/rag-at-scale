@@ -1,6 +1,6 @@
 import json
 from abc import ABC, abstractmethod
-from typing import Generator
+from collections.abc import Generator
 
 from pydantic import BaseModel
 
@@ -13,7 +13,7 @@ class Loader(ABC, BaseModel):
     @abstractmethod
     def loader_name(self) -> str:
         pass
-    
+
     @property
     @abstractmethod
     def required_properties(self) -> list[str]:
@@ -35,7 +35,7 @@ class Loader(ABC, BaseModel):
         pass
 
     @abstractmethod
-    def load(self, file:LocalFile) -> Generator[RagDocument, None, None]:
+    def load(self, file: LocalFile) -> Generator[RagDocument, None, None]:
         """Load data into Document objects."""
 
     @abstractmethod
@@ -51,14 +51,14 @@ class Loader(ABC, BaseModel):
             _type_: the json to return
         """
         json_to_return = {}
-        json_to_return['loader_name'] = self.loader_name
-        json_to_return['loader_information'] = json.loads(self.json())
+        json_to_return["loader_name"] = self.loader_name
+        json_to_return["loader_information"] = json.loads(self.json())
         return json_to_return
 
     def config(self):
         json_to_return = {}
-        json_to_return['required_properties'] = self.required_properties
-        json_to_return['optional_properties'] = self.optional_properties
-        json_to_return['available_metadata'] = self.available_metadata
-        json_to_return['available_content'] = self.available_content
+        json_to_return["required_properties"] = self.required_properties
+        json_to_return["optional_properties"] = self.optional_properties
+        json_to_return["available_metadata"] = self.available_metadata
+        json_to_return["available_content"] = self.available_content
         return json_to_return

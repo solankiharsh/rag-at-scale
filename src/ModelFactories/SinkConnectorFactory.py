@@ -6,9 +6,10 @@ from utils.platform_commons.logger import logger
 
 available_sink_connectors = [enum.value for enum in list(SinkConnectorEnum)]
 
+
 class SinkConnectorFactory:
-    """Class that leverages the Factory pattern to get the appropriate sink connector
-    """
+    """Class that leverages the Factory pattern to get the appropriate sink connector"""
+
     @staticmethod
     def get_sink(sink_name: str, sink_information: dict) -> SinkConnector:
         sink_connector_name = sink_name.replace(" ", "").lower()

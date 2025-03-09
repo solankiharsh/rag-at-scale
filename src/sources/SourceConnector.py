@@ -1,6 +1,7 @@
 # src/sources/source_connector.py
 from abc import ABC, abstractmethod
-from typing import Generator, Optional
+from collections.abc import Generator
+from typing import Optional
 
 from pydantic import Field
 
@@ -9,30 +10,27 @@ from src.Chunkers.RecursiveChunker import RecursiveChunker
 from src.DataConnectors.DataConnector import DataConnector
 from src.Loaders.AutoLoader import AutoLoader
 from src.Loaders.Loader import Loader
-from src.schemas.cloud_file_schema import CloudFileSchema
-from src.schemas.source_config_schema import SourceConfigSchema
+from src.Shared.CloudFile import CloudFileSchema
+from src.Shared.source_config_schema import SourceConfigSchema
 
 
 class SourceConnector(ABC):
     def __init__(self, config: SourceConfigSchema):
         self.name = config.name
         self.settings = config.settings
-        
+
     data_connector: DataConnector = Field(..., description="Connector to data source")
 
     chunker: Chunker = Field(
-        default=RecursiveChunker(),
-        description="Chunker to be used to break down content"
+        default=RecursiveChunker(), description="Chunker to be used to break down content"
     )
 
     loader: Loader = Field(
-        default=AutoLoader(),
-        description="Loader to load data from file / data type"
+        default=AutoLoader(), description="Loader to load data from file / data type"
     )
 
     custom_metadata: Optional[dict] = Field(
-        default_factory=dict,
-        description="Custom metadata to be added to the vector"
+        default_factory=dict, description="Custom metadata to be added to the vector"
     )
 
     @staticmethod
@@ -41,15 +39,13 @@ class SourceConnector(ABC):
         print(f"source_type: {source_type}")
         if source_type == "s3connector":
             from src.DataConnectors.S3_Connector import S3SourceConnector
+
             return S3SourceConnector(config=source_config)
         else:
             raise ValueError(f"Unsupported source type: {source_type}")
 
     def as_json(self):
-        return {
-            "name": self.name,
-            "settings": self.settings
-        }
+        return {"name": self.name, "settings": self.settings}
 
     @abstractmethod
     def list_files_full(self) -> Generator[CloudFileSchema, None, None]:

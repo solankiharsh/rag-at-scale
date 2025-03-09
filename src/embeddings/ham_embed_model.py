@@ -15,16 +15,15 @@ class User:
         self.id = id
         self.name = name
 
+
 class HamEmbedModel(EmbedModel):
-    
-    
     async def embed(self, documents: list[RagDocument]) -> tuple[list[list[float]], dict]:
         # Extract the text from documents. Assume RagDocument has a 'text' attribute.
         queries = [doc.content for doc in documents]
-        
+
         # For this example, create a dummy user.
         user = User(id="dummy", name="Dummy User")
-        
+
         # Optionally, you might create or pass an httpx.AsyncClient instance.
         async with httpx.AsyncClient() as client:
             # Call get_embeddings using the HAM branch.
@@ -36,9 +35,9 @@ class HamEmbedModel(EmbedModel):
                 query=queries,
                 user=user,
                 client=client,
-                embedding_dimensions=self.settings.get("embedding_dimensions")
+                embedding_dimensions=self.settings.get("embedding_dimensions"),
             )
-        
+
         # Process the response. We assume the response contains a key "content_embedding"
         # which is a list of objects each with an "embedding" field.
         vectors = [item["embedding"] for item in embeddings_response.get("content_embedding", [])]

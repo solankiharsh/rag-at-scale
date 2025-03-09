@@ -7,10 +7,10 @@ class ChunkerEnum(str, Enum):
     recursivechunker = "recursivechunker"
 
     def as_chunker_enum(chunker_name: str):
-        if chunker_name == None or chunker_name == "":
+        if chunker_name is None or chunker_name == "":
             return None
         try:
             enum_to_return = ChunkerEnum[chunker_name.lower()]
             return enum_to_return
-        except KeyError as e:
+        except KeyError:
             return None

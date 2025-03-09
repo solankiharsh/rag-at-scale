@@ -8,6 +8,7 @@ from src.Shared.Exceptions import OauthTokenRetrievalError
 
 config = Config()
 
+
 class OAuthService:
     def __init__(self, config: Config):
         self.config = config
@@ -34,12 +35,14 @@ class OAuthService:
         async with httpx.AsyncClient() as client:
             try:
                 response = await client.post(
-                    config.oauth_url, # Changed from self.settings.oauth_url to config.oauth_url
-                    headers={"Authorization": "Basic " + config.oauth_client_credentials}, # Changed to config
+                    config.oauth_url,  # Changed from self.settings.oauth_url to config.oauth_url
+                    headers={
+                        "Authorization": "Basic " + config.oauth_client_credentials
+                    },  # Changed to config
                     data={
                         "grant_type": "password",
-                        "username": config.oauth_nuid_username, # Changed to config
-                        "password": config.oauth_nuid_password, # Changed to config
+                        "username": config.oauth_nuid_username,  # Changed to config
+                        "password": config.oauth_nuid_password,  # Changed to config
                         "scope": "openid profile email",
                     },
                 )
@@ -54,4 +57,4 @@ class OAuthService:
                 raise OauthTokenRetrievalError(e.response.status_code, e.response.text)
 
 
-oauth_service = OAuthService(config) # Pass config object to OAuthService
+oauth_service = OAuthService(config)  # Pass config object to OAuthService

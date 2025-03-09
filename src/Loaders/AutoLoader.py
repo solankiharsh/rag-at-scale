@@ -1,4 +1,4 @@
-from typing import Generator
+from collections.abc import Generator
 
 from langchain.document_loaders import UnstructuredFileLoader
 
@@ -28,7 +28,7 @@ class AutoLoader(Loader):
     @property
     def loader_name(self) -> str:
         return "AutoLoader"
-    
+
     @property
     def required_properties(self) -> list[str]:
         return []
@@ -36,7 +36,7 @@ class AutoLoader(Loader):
     @property
     def optional_properties(self) -> list[str]:
         return []
-    
+
     @property
     def available_metadata(self) -> list[str]:
         return []
@@ -45,7 +45,7 @@ class AutoLoader(Loader):
     def available_content(self) -> list[str]:
         return []
 
-    def load(self, file:LocalFile) -> Generator[RagDocument, None, None]:
+    def load(self, file: LocalFile) -> Generator[RagDocument, None, None]:
         """Load data into Document objects."""
         if "csv" in file.type:
             loader = CSVLoader()
@@ -66,8 +66,8 @@ class AutoLoader(Loader):
             for doc in documents:
                 yield RagDocument(id=file.id, content=doc.page_content, metadata=file.metadata)
             return
-        
+
         yield from loader.load(file=file)
-    
+
     def config_validation(self) -> bool:
         return True

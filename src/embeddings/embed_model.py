@@ -1,7 +1,7 @@
 # src/embeddings/embed_model.py
 from abc import ABC, abstractmethod
 
-from src.schemas.embed_config_schema import EmbedConfigSchema
+from src.Shared.embed_config_schema import EmbedConfigSchema
 from src.Shared.RagDocument import RagDocument
 
 
@@ -15,6 +15,7 @@ class EmbedModel(ABC):
         model_name = embed_config.model_name.lower()
         if model_name == "jina-v2-base":
             from src.embeddings.ham_embed_model import HamEmbedModel
+
             return HamEmbedModel(config=embed_config)
         else:
             raise ValueError(f"Unsupported embedding model: {model_name}")

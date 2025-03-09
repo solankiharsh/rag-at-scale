@@ -22,8 +22,7 @@ async def get_embeddings(
     # goes through HAM embeddings.
     if embeddings_model == "jina-v2-base":
         logger.debug(
-            f"Generating HAM embeddings using model: {embeddings_model} "
-            f"for user: {user.id}"
+            f"Generating HAM embeddings using model: {embeddings_model} " f"for user: {user.id}"
         )
         return await generate_ham_embeddings(
             model=embeddings_model,
@@ -34,6 +33,7 @@ async def get_embeddings(
         )
     else:
         raise ValueError(f"Unsupported embedding model: {embeddings_model}")
+
 
 # Dummy implementation of generate_ham_embeddings.
 # Replace this with your actual implementation.
@@ -47,9 +47,10 @@ async def generate_ham_embeddings(
     # Simulate an asynchronous call to an external API
     await asyncio.sleep(0.1)
     # Return a dummy response for demonstration purposes.
-    dummy_embeddings = [{"combined_sentence": text, "embedding": [0.1, 0.2, 0.3]} for text in input_list]
+    dummy_embeddings = [
+        {"combined_sentence": text, "embedding": [0.1, 0.2, 0.3]} for text in input_list
+    ]
     return {
         "content_embedding": dummy_embeddings,
-        "usage": {"prompt_tokens": 10, "total_tokens": 20}
+        "usage": {"prompt_tokens": 10, "total_tokens": 20},
     }
-    

@@ -1,4 +1,3 @@
-
 from platform_commons.logs.platform_logger import PlatformLogger
 
 """
@@ -7,4 +6,3 @@ Prevents creation of separate loggers with different levels.
 """
 
 logger = PlatformLogger(log_level="INFO")
-

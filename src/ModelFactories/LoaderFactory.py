@@ -1,4 +1,3 @@
-
 from src.Loaders.AutoLoader import AutoLoader
 from src.Loaders.CSVLoader import CSVLoader
 from src.Loaders.HTMLLoader import HTMLLoader
@@ -10,13 +9,13 @@ from src.Loaders.PDFLoader import PDFLoader
 
 
 class LoaderFactory:
-    """Class that leverages the Factory pattern to get the appropriate loader
-    """
+    """Class that leverages the Factory pattern to get the appropriate loader"""
+
     @staticmethod
-    def get_loader(loader_name: str, loader_information: dict)  -> Loader:
-        if loader_information == None:
+    def get_loader(loader_name: str, loader_information: dict) -> Loader:
+        if loader_information is None:
             return AutoLoader()
-        loader_name_enum:LoaderEnum = LoaderEnum.as_loader_enum(loader_name)
+        loader_name_enum: LoaderEnum = LoaderEnum.as_loader_enum(loader_name)
         if loader_name_enum == LoaderEnum.autoloader:
             return AutoLoader(**loader_information)
         elif loader_name_enum == LoaderEnum.htmlloader:
@@ -31,4 +30,3 @@ class LoaderFactory:
             return PDFLoader(**loader_information)
         else:
             return AutoLoader(**loader_information)
-            

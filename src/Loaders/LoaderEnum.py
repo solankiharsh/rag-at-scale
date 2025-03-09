@@ -10,10 +10,10 @@ class LoaderEnum(str, Enum):
     pdfloader = "pdfloader"
 
     def as_loader_enum(loader_name: str):
-        if loader_name == None or loader_name == "":
+        if loader_name is None or loader_name == "":
             return None
         try:
             enum_to_return = LoaderEnum[loader_name.lower()]
             return enum_to_return
-        except KeyError as e:
+        except KeyError:
             return None
