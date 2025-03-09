@@ -45,10 +45,10 @@ class SourceConnector(ABC):
 
     @abstractmethod
     def load_data(self, file: object) -> Generator[DocumentSchema, None, None]: # file is the local file object
-        """Loads data from a local file and yields NeumDocumentSchema objects."""
+        """Loads data from a local file and yields RagDocumentSchema objects."""
         pass
 
     @abstractmethod
     def chunk_data(self, document: DocumentSchema) -> Generator[List[DocumentSchema], None, None]:
-        """Chunks a document into smaller NeumDocumentSchema objects."""
+        """Chunks a document into smaller RagDocumentSchema objects."""
         pass
