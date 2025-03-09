@@ -4,10 +4,7 @@ from enum import Enum
 
 import requests
 
-from src.schemas.embed_config_schema import EmbedConfigSchema
 from src.schemas.pipeline_config_schema import PipelineConfigSchema
-from src.schemas.sink_config_schema import SinkConfigSchema
-from src.schemas.source_config_schema import SourceConfigSchema
 
 
 class TriggerSyncTypeEnum(str, Enum): # Using Enum from Python stdlib
@@ -74,52 +71,3 @@ class RagClient(ABC):
             return None
 
 
-# --- Example Usage in client.py ---
-if __name__ == '__main__':
-    client = RagClient(api_key="YOUR_API_KEY_HERE") # Replace with your API Key (if you were using auth)
-
-    # 1. Define Pipeline Configuration using Pydantic Models
-    pipeline_config = PipelineConfigSchema(
-        id="pipeline-from-client-1",  # Define ID here, API will check for uniqueness
-        name="Client Created Pipeline",
-        sources=[
-            SourceConfigSchema(
-                name="s3-source-client",
-                type="s3",
-                settings={
-                    "bucket_name": "your-s3-bucket-name", # Replace with your bucket
-                    "prefix": "client-documents/"
-                }
-            )
-        ],
-        embed_model=EmbedConfigSchema(
-            model_name="sentence-transformers",
-            settings={}
-        ),
-        sink=SinkConfigSchema(
-            type="pinecone",
-            settings={
-                "api_key": "YOUR_PINECONE_API_KEY", # Replace with your Pinecone API Key
-                "environment": "us-west1-gcp", # Replace with your Pinecone Environment
-                "index_name": "rag-pipeline-index" # Replace with your Pinecone Index Name
-            }
-        )
-    )
-
-    # 2. Create Pipeline via API
-    created_pipeline_response = client.create_pipeline(pipeline_config)
-    if created_pipeline_response:
-        pipeline_id = created_pipeline_response['id'] # Assuming API returns the created pipeline config
-        print(f"Pipeline created successfully with ID: {pipeline_id}")
-
-        # 3. Get Pipeline details
-        retrieved_pipeline = client.get_pipeline(pipeline_id)
-        if retrieved_pipeline:
-            print(f"Retrieved Pipeline: {retrieved_pipeline}")
-
-        # 4. Trigger Pipeline Run (Full Sync)
-        trigger_response = client.trigger_pipeline(pipeline_id, TriggerSyncTypeEnum.full)
-        if trigger_response:
-            print(f"Pipeline run triggered: {trigger_response}")
-    else:
-        print("Pipeline creation failed.")

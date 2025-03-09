@@ -1,4 +1,4 @@
-from typing import Generator, List, Optional
+from typing import Generator, Optional
 
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from pydantic import Field
@@ -26,31 +26,37 @@ class RecursiveChunker(Chunker):
         The optional batch size for processing chunks. Defines the number of chunks to process in one batch. Default is 1000.
 
     separators : Optional[List[str]]
-        A list of optional separators to be used for recursive chunking. Each separator defines a new level of chunking. Default separators include newline and space characters.
+        A list of optional separators to be used for recursive chunking. Each separator defines
+        a new level of chunking. Default separators include newline and space characters.
     """
 
     chunk_size: Optional[int] = Field(default=500, description="Optional chunk size.")
 
     chunk_overlap: Optional[int] = Field(default=0, description="Optional chunk overlap.")
 
-    batch_size: Optional[int] = Field(default=1000, description="Optional batch size for processing.")
+    batch_size: Optional[int] = Field(
+        default=1000, description="Optional batch size for processing."
+    )
 
-    separators: Optional[List[str]] = Field(["\n\n", "\n", " ", ""], description="Optional list of separators for chunking.")
+    separators: Optional[list[str]] = Field(
+        ["\n\n", "\n", " ", ""],
+        description="Optional list of separators for chunking."
+    )
 
     @property
     def chunker_name(self) -> str:
         return "RecursiveChunker"
 
     @property
-    def required_properties(self) -> List[str]:
+    def required_properties(self) -> list[str]:
         return []
 
     @property
-    def optional_properties(self) -> List[str]:
+    def optional_properties(self) -> list[str]:
         return ["chunk_size", "chunk_overlap", "batch_size", "separators"]
 
 
-    def chunk(self, documents:List[RagDocument]) -> Generator[List[RagDocument], None, None]:
+    def chunk(self, documents:list[RagDocument]) -> Generator[list[RagDocument], None, None]:
         
         batch_size = self.batch_size
 
@@ -62,11 +68,17 @@ class RecursiveChunker(Chunker):
         )
 
         # Iterate through documents to chunk them and them merge them back up
-        documents_to_embed:List[RagDocument] = []
+        documents_to_embed:list[RagDocument] = []
         for doc in documents:
             chunks = text_splitter.split_text(doc.content)
             for i in range(len(chunks)):
-                documents_to_embed.append(RagDocument(id=doc.id + "_" + str(i), content=chunks[i], metadata=doc.metadata))
+                documents_to_embed.append(
+                    RagDocument(
+                        id=doc.id + "_" + str(i),
+                        content=chunks[i],
+                        metadata=doc.metadata
+                    )
+                )
                 if(len(documents_to_embed) == batch_size):
                     yield documents_to_embed
                     documents_to_embed = []
