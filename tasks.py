@@ -3,7 +3,7 @@
 from celery import Celery
 
 from config import config
-from src.Pipelines.pipeline import Pipeline
+from src.Pipelines.Pipeline import Pipeline
 from src.schemas.cloud_file_schema import CloudFileSchema
 from src.schemas.source_config_schema import SourceConfigSchema
 from src.Shared.RagDocument import RagDocument
@@ -17,6 +17,7 @@ app = Celery('tasks', broker=config.REDIS_BROKER_URL)
 @app.task
 def data_extraction_task(pipeline_config_dict: dict, extract_type: str, last_extraction=None):
     pipeline = Pipeline.create_pipeline(pipeline_config_dict)
+    logger.info(f"pipeline_config_dict: {pipeline_config_dict}")
     for source, cloud_file in pipeline.run_extraction(
         extract_type=extract_type, last_extraction=last_extraction
     ):
@@ -50,13 +51,7 @@ def data_processing_task(
 
         batched_chunks: list[RagDocument] = []
         batch_number = 0
-        
-        logger.info(f"Processing document {cloud_file.id}")
-        logger.info(f"Processing document {cloud_file.metadata}")
-        logger.info(f"Processing document {cloud_file.name}")
-        logger.info(f"Processing document {cloud_file.path}")
-        logger.info(f"Processing document {cloud_file.type}")
-        
+                
         for chunks in pipeline.process_document(source, cloud_file):
             batched_chunks.extend(chunks)
             logger.debug(f"Collected {len(batched_chunks)} chunks so far")

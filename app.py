@@ -2,7 +2,7 @@
 
 from fastapi import Body, FastAPI, HTTPException
 
-from src.Pipelines.pipeline import Pipeline
+from src.Pipelines.Pipeline import Pipeline
 from src.schemas.pipeline_config_schema import PipelineConfigSchema
 from tasks import data_extraction_task
 
@@ -14,34 +14,6 @@ app = FastAPI()
 
 # Configuration (adjust these values or load from environment)
 RAG_ENDPOINT = "http://0.0.0.0:8000"
-
-# # --- Load Pipeline Config (Example - in real app, load from DB or config file) ---
-# # Example: Load from a JSON file (pipeline_config.json)
-# # Ensure pipeline_config.json exists with valid PipelineConfigSchema data
-# try:
-#     with open("pipeline_config.json", "r") as f:
-#         pipeline_config_data = json.load(f)
-#         pipeline_config = PipelineConfigSchema(**pipeline_config_data) # Validate against schema
-# except FileNotFoundError:
-#     raise Exception("pipeline_config.json not found. Create this file with pipeline configuration.")
-# except Exception as e:
-#     raise Exception(f"Error loading pipeline configuration: {e}")
-
-
-# @app.post("/pipelines/{pipeline_id}/run")
-# async def run_pipeline(pipeline_id: str, extract_type: str = "full"):
-#     """Triggers a pipeline run for a given pipeline ID."""
-#     if pipeline_config.id != pipeline_id: # Basic ID check, enhance as needed
-#         raise HTTPException(status_code=404, detail="Pipeline not found")
-
-#     if extract_type not in ["full", "delta"]:
-#         raise HTTPException(status_code=400, detail="Invalid extract_type. Must be 'full' or 'delta'.")
-
-#     task = data_extraction_task.apply_async(
-#         kwargs={"pipeline_config_dict": pipeline_config.dict(), "extract_type": extract_type},
-#         queue="data_extraction"
-#     )
-#     return {"message": f"Pipeline '{pipeline_id}' run triggered for extraction type '{extract_type}'. Task ID: {task.id}"}
 
 app = FastAPI()
 

@@ -10,7 +10,6 @@ from pydantic import Field
 from src.schemas.cloud_file_schema import CloudFileSchema
 from src.schemas.source_config_schema import SourceConfigSchema
 from src.Shared.Exceptions import S3ConnectionException
-from src.Shared.RagDocument import RagDocument
 from src.Shared.Selector import Selector
 from src.Sources.source_connector import SourceConnector
 from utils.platform_commons.logger import logger
@@ -142,31 +141,3 @@ class S3SourceConnector(SourceConnector):
             except Exception as e:
                 logger.error(f"Error downloading file {cloud_file.name}: {e}")
                 raise
-
-    def load_data(
-        self, local_file: object, cloud_file: CloudFileSchema
-    ) -> Generator[RagDocument, None, None]:
-        logger.info(f"Loading data from local file: {local_file} with cloud metadata: {cloud_file}")
-        try:
-            with open(local_file) as f:
-                content = f.read()
-                yield RagDocument(id=cloud_file.id, content=content, metadata=cloud_file.metadata)
-        except Exception as e:
-            print(f"Error loading file {local_file}: {e}")
-
-    def chunk_data(self, document: RagDocument) -> Generator[list[RagDocument], None, None]:
-        sentences = document.content.split(".")
-        chunk_size = 3
-        chunks = []
-        for i in range(0, len(sentences), chunk_size):
-            chunk_content = ".".join(sentences[i:i + chunk_size])
-            if chunk_content.strip():
-                chunk_id = f"{document.id}-chunk-{i}"
-                chunks.append(
-                    RagDocument(
-                        id=chunk_id,
-                        content=chunk_content,
-                        metadata=document.metadata
-                    )
-                )
-        yield chunks

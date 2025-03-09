@@ -4,7 +4,6 @@ from typing import Generator
 
 from src.schemas.cloud_file_schema import CloudFileSchema
 from src.schemas.source_config_schema import SourceConfigSchema
-from src.Shared.RagDocument import RagDocument
 
 
 class SourceConnector(ABC):
@@ -16,8 +15,8 @@ class SourceConnector(ABC):
     def create_source(source_config: SourceConfigSchema):
         source_type = source_config.type.lower()
         print(f"source_type: {source_type}")
-        if source_type == "s3":
-            from src.Sources.s3_source import S3SourceConnector
+        if source_type == "s3connector":
+            from src.DataConnectors.S3_Connector import S3SourceConnector
             return S3SourceConnector(config=source_config)
         else:
             raise ValueError(f"Unsupported source type: {source_type}")
@@ -43,17 +42,4 @@ class SourceConnector(ABC):
         self, cloud_file: CloudFileSchema
     ) -> Generator[object, None, None]:  # object can be LocalFile representation
         """Downloads files to local storage. Yields local file paths/objects."""
-        pass
-
-    @abstractmethod
-    def load_data(
-        self, local_file: object, cloud_file: CloudFileSchema
-    ) -> Generator[RagDocument, None, None]:
-        """Loads data from a local file and yields RagDocument objects."""
-        pass
-
-
-    @abstractmethod
-    def chunk_data(self, document: RagDocument) -> Generator[list[RagDocument], None, None]:
-        """Chunks a document into smaller RagDocument objects."""
         pass
