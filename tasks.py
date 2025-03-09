@@ -12,6 +12,7 @@ from utils.platform_commons.logger import logger
 
 app = Celery("tasks", broker=config.REDIS_BROKER_URL)
 
+
 # --- Task Definitions ---
 @app.task
 def data_extraction_task(pipeline_config_dict: dict, extract_type: str, last_extraction=None):

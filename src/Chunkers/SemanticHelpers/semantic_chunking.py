@@ -90,7 +90,7 @@ def semantic_chunking(documents: list[RagDocument], chunking_code_exec: str) -> 
     exec(chunking_code_exec, globals())
     result_doc = []
     for doc in documents:
-        results = split_text_into_chunks(doc.page_content)
+        results = split_text_into_chunks(doc.content)  # noqa: F821
         for result in results:
             result_doc.append(RagDocument(id=doc.id, content=result, metadata=doc.metadata))
     return result_doc

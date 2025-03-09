@@ -38,12 +38,15 @@ metrics = Metrics(
     dsn=config.metrics_dsn,
     blossom_id=config.blossom_id,
 )
+
+
 class HamEmbedModel(EmbedConnector):
     api_key: str
 
     def __init__(self, **data):
         super().__init__(**data)
         self.api_key = config.gateway_api_key
+
     max_retries: Optional[int] = 20
     chunk_size: Optional[int] = 1000
 
@@ -75,20 +78,19 @@ class HamEmbedModel(EmbedConnector):
         user = User(id="dummy", name="Dummy User", tap_app_name="dummy")
 
         async with httpx.AsyncClient() as client:
-            
             embeddings_response = await self.generate_ham_embeddings(
                 model=self.embed_name,
                 input_list=queries,
                 user=user,
                 httpx_client=client,
                 # embedding_dimensions=self.settings.get("embedding_dimensions"),
-                embedding_dimensions=768
+                embedding_dimensions=768,
             )
 
         vectors = [item["embedding"] for item in embeddings_response.get("content_embedding", [])]
         usage = embeddings_response.get("usage", {})
         return vectors, usage
-    
+
     async def generate_ham_embeddings(
         self,
         model,
@@ -166,14 +168,14 @@ class HamEmbedModel(EmbedConnector):
                 )
 
             start_time = time.time()
-            
-            logger.info("*"*100)
+
+            logger.info("*" * 100)
             logger.info("Generating HAM embeddings")
             logger.info(f"config.ham_embeddings_endpoint: {config.ham_embeddings_endpoint}")
             logger.info(f"ham_payload: {ham_payload}")
             logger.info(f"headers: {headers}")
             logger.info(f"config.ham_embeddings_timeout: {config.ham_embeddings_timeout}")
-            logger.info("*"*100)
+            logger.info("*" * 100)
 
             embeddings_response = await httpx_client.post(
                 url=config.ham_embeddings_endpoint,
@@ -245,7 +247,10 @@ class HamEmbedModel(EmbedConnector):
         def adjust_batch_size():
             nonlocal dynamic_batch_size
             avg_latency = mean(recent_latencies) if recent_latencies else 0
-            if avg_latency < config.latency_threshold_ms and dynamic_batch_size < config.max_batch_size:
+            if (
+                avg_latency < config.latency_threshold_ms
+                and dynamic_batch_size < config.max_batch_size
+            ):
                 dynamic_batch_size = min(dynamic_batch_size + 1, config.max_batch_size)
             elif (
                 avg_latency > config.latency_threshold_ms
@@ -256,7 +261,10 @@ class HamEmbedModel(EmbedConnector):
         try:
             if batch_mode == "dynamic":
                 while input_list:
-                    batch, input_list = input_list[:dynamic_batch_size], input_list[dynamic_batch_size:]
+                    batch, input_list = (
+                        input_list[:dynamic_batch_size],
+                        input_list[dynamic_batch_size:],
+                    )
                     batch_results = await batch_parallelism(batch)
                     parsed_output.extend(batch_results)
                     adjust_batch_size()
@@ -294,5 +302,6 @@ class HamEmbedModel(EmbedConnector):
             raise HAMRequestError(e)
 
     # def embed_query(self, query: str) -> list[float]:
-    #     embedding = OpenAIEmbeddings(api_key=self.api_key)  # Using the same OpenAI-style embedding
+    #     embedding = OpenAIEmbeddings(api_key=self.api_key)
+    #     # Using the same OpenAI-style embedding
     #     return embedding.embed_query(query)

@@ -8,12 +8,11 @@ from src.Shared.RagDocument import RagDocument
 
 
 class EmbedConnector(ABC, BaseModel):
-
     @property
     @abstractmethod
     def embed_name(self) -> str:
         pass
-    
+
     @property
     @abstractmethod
     def required_properties(self) -> list[str]:
@@ -34,15 +33,12 @@ class EmbedConnector(ABC, BaseModel):
         """Generates embeddings asynchronously."""
         pass
 
-    
     # @abstractmethod
     # def embed_query(self, query:str) -> list[float]:
     #     """Generate embeddings with a given service"""
-    
+
     def embed_query(self, query: str) -> list[float]:
         raise NotImplementedError("embed_query is not supported in HamEmbedModel")
-
-
 
     def as_json(self):
         """Python does not have built in serialization.
@@ -52,12 +48,12 @@ class EmbedConnector(ABC, BaseModel):
             _type_: the json to return
         """
         json_to_return = {}
-        json_to_return['embed_name'] = self.embed_name
-        json_to_return['embed_information'] = json.loads(self.json())
+        json_to_return["embed_name"] = self.embed_name
+        json_to_return["embed_information"] = json.loads(self.json())
         return json_to_return
-    
+
     def config(self):
         json_to_return = {}
-        json_to_return['required_properties'] = self.required_properties
-        json_to_return['optional_properties'] = self.optional_properties
+        json_to_return["required_properties"] = self.required_properties
+        json_to_return["optional_properties"] = self.optional_properties
         return json_to_return

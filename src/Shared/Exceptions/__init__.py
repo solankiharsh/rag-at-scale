@@ -31,6 +31,7 @@ def ham_response_error_to_error_response(
         code="ham_response_error",
     )
 
+
 class InvalidModelDimensions(Exception):
     """Exception raised when the dimensions are invalid for a model."""
 
@@ -163,7 +164,6 @@ def embedding_size_mismatch_error_to_error_response(
         error_type="Internal Server Error",
         code="embedding_size_mismatch_error",
     )
-
 
 
 class HAMRateLimitError(Exception):
