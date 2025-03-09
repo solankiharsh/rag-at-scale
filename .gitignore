@@ -5,3 +5,5 @@
 *.pyw
 *.pyz
 *.pyzw
+*.__pycache__
+*.mypy_cache

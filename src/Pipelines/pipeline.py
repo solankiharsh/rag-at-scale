@@ -6,13 +6,14 @@ from asyncio.log import logger
 from collections.abc import Generator
 
 from src.Chunkers.Chunker import Chunker
-from src.embeddings.embed_model import EmbedModel
+from src.EmbedConnectors.EmbedConnector import EmbedConnector
 from src.ModelFactories.ChunkerFactory import ChunkerFactory
 from src.ModelFactories.DataConnectorFactory import DataConnectorFactory
+from src.ModelFactories.EmbedConnectorFactory import EmbedConnectorFactory
 from src.ModelFactories.LoaderFactory import LoaderFactory
 from src.ModelFactories.SinkConnectorFactory import SinkConnectorFactory
 from src.Shared.CloudFile import CloudFileSchema
-from src.Shared.Exceptions import InvalidDataConnectorException
+from src.Shared.Exceptions import InvalidDataConnectorException, InvalidEmbedConnectorException
 from src.Shared.LocalFile import LocalFile
 from src.Shared.pipeline_config_schema import PipelineConfigSchema
 from src.Shared.RagDocument import RagDocument
@@ -60,9 +61,21 @@ class Pipeline:
 
         return sources
 
-    def _initialize_embed_model(self, embed_model_config) -> EmbedModel:
-        """Initializes the embedding model."""
-        return EmbedModel.create_embed_model(embed_model_config)
+    def _initialize_embed_model(self, embed_model_config) -> EmbedConnector:
+        """
+        Initializes the embedding model using the EmbedConnectorFactory.
+        """
+        try:
+            return EmbedConnectorFactory.get_embed(
+                embed_name=embed_model_config.model_name,
+                embed_information=embed_model_config.settings,
+            )
+        except InvalidEmbedConnectorException as e:
+            logger.error(f"Failed to initialize embed model: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error initializing embed model: {e}")
+            raise
 
     def _initialize_sink(self, sink_config) -> SinkConnector:
         """Initializes the sink connector."""
