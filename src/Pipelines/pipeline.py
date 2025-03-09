@@ -18,7 +18,7 @@ from src.Shared.LocalFile import LocalFile
 from src.Shared.RagDocument import RagDocument
 from src.Shared.RagVector import RagVector
 from src.SinkConnectors.SinkConnector import SinkConnector
-from src.Sources.source_connector import SourceConnector
+from src.Sources.SourceConnector import SourceConnector
 
 
 class Pipeline:

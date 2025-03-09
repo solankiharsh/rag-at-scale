@@ -1,7 +1,14 @@
 # src/sources/source_connector.py
 from abc import ABC, abstractmethod
-from typing import Generator
+from typing import Generator, Optional
 
+from pydantic import Field
+
+from src.Chunkers.Chunker import Chunker
+from src.Chunkers.RecursiveChunker import RecursiveChunker
+from src.DataConnectors.DataConnector import DataConnector
+from src.Loaders.AutoLoader import AutoLoader
+from src.Loaders.Loader import Loader
 from src.schemas.cloud_file_schema import CloudFileSchema
 from src.schemas.source_config_schema import SourceConfigSchema
 
@@ -10,6 +17,23 @@ class SourceConnector(ABC):
     def __init__(self, config: SourceConfigSchema):
         self.name = config.name
         self.settings = config.settings
+        
+    data_connector: DataConnector = Field(..., description="Connector to data source")
+
+    chunker: Chunker = Field(
+        default=RecursiveChunker(),
+        description="Chunker to be used to break down content"
+    )
+
+    loader: Loader = Field(
+        default=AutoLoader(),
+        description="Loader to load data from file / data type"
+    )
+
+    custom_metadata: Optional[dict] = Field(
+        default_factory=dict,
+        description="Custom metadata to be added to the vector"
+    )
 
     @staticmethod
     def create_source(source_config: SourceConfigSchema):

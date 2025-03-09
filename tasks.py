@@ -3,11 +3,11 @@
 from celery import Celery
 
 from config import config
-from src.Pipelines.Pipeline import Pipeline
+from src.Pipelines.pipeline import Pipeline
 from src.schemas.cloud_file_schema import CloudFileSchema
 from src.schemas.source_config_schema import SourceConfigSchema
 from src.Shared.RagDocument import RagDocument
-from src.Sources.source_connector import SourceConnector
+from src.Sources.SourceConnector import SourceConnector
 from utils.platform_commons.logger import logger
 
 app = Celery('tasks', broker=config.REDIS_BROKER_URL)

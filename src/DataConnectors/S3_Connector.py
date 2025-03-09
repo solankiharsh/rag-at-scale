@@ -11,7 +11,7 @@ from src.schemas.cloud_file_schema import CloudFileSchema
 from src.schemas.source_config_schema import SourceConfigSchema
 from src.Shared.Exceptions import S3ConnectionException
 from src.Shared.Selector import Selector
-from src.Sources.source_connector import SourceConnector
+from src.Sources.SourceConnector import SourceConnector
 from utils.platform_commons.logger import logger
 
 
