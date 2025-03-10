@@ -166,7 +166,7 @@ stages:
         parameters:
           registry: docker.target.com
           cache: true
-          repo: docker.target.com/managed/genai-platform/rag-service
+          repo: docker.target.com/managed/genai-platform/rag-at-scale
           tags:
             - "b${VELA_BUILD_COMMIT:0:8}"
         ruleset:
@@ -249,31 +249,31 @@ secrets:
     key: api-platform/api-platform-team/plugin_spec_token
     type: shared
   - name: OAUTH_URL
-    key: GenAI-Platform/rag-service/OAUTH_URL
+    key: GenAI-Platform/rag-at-scale/OAUTH_URL
     engine: native
     type: repo
   - name: OAUTH_NUID_USERNAME
-    key: GenAI-Platform/rag-service/OAUTH_NUID_USERNAME
+    key: GenAI-Platform/rag-at-scale/OAUTH_NUID_USERNAME
     engine: native
     type: repo
   - name: OAUTH_NUID_PASSWORD
-    key: GenAI-Platform/rag-service/OAUTH_NUID_PASSWORD
+    key: GenAI-Platform/rag-at-scale/OAUTH_NUID_PASSWORD
     engine: native
     type: repo
   - name: OAUTH_CLIENT_CREDENTIALS
-    key: GenAI-Platform/rag-service/OAUTH_CLIENT_CREDENTIALS
+    key: GenAI-Platform/rag-at-scale/OAUTH_CLIENT_CREDENTIALS
     engine: native
     type: repo
   - name: AZURE_OPENAI_API_KEY
-    key: GenAI-Platform/rag-service/AZURE_OPENAI_API_KEY
+    key: GenAI-Platform/rag-at-scale/AZURE_OPENAI_API_KEY
     engine: native
     type: repo
   - name: AZURE_OPENAI_API_VERSION
-    key: GenAI-Platform/rag-service/AZURE_OPENAI_API_VERSION
+    key: GenAI-Platform/rag-at-scale/AZURE_OPENAI_API_VERSION
     engine: native
     type: repo
   - name: AZURE_OPENAI_ENDPOINT
-    key: GenAI-Platform/rag-service/AZURE_OPENAI_ENDPOINT
+    key: GenAI-Platform/rag-at-scale/AZURE_OPENAI_ENDPOINT
     engine: native
     type: repo
   - name: api_key
@@ -297,15 +297,15 @@ secrets:
     engine: native
     type: org
   - name: REDIS_CACHE_USERNAME
-    key: GenAI-Platform/rag-service/REDIS_CACHE_USERNAME
+    key: GenAI-Platform/rag-at-scale/REDIS_CACHE_USERNAME
     engine: native
     type: repo
   - name: REDIS_CACHE_PASSWORD
-    key: GenAI-Platform/rag-service/REDIS_CACHE_PASSWORD
+    key: GenAI-Platform/rag-at-scale/REDIS_CACHE_PASSWORD
     engine: native
     type: repo
   - name: SECRET_KEY
-    key: GenAI-Platform/rag-service/SECRET_KEY
+    key: GenAI-Platform/rag-at-scale/SECRET_KEY
     engine: native
     type: repo
   - name: github_token
