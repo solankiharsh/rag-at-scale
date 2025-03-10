@@ -31,6 +31,7 @@ def openai_request_error_to_error_response(
         code="openai_request_error",
     )
 
+
 class OpenAIResponseError(Exception):
     """
     This exception is raised when there are non-200 response status codes
@@ -61,6 +62,7 @@ def openai_response_error_to_error_response(
         code="openai_response_error",
     )
 
+
 class ThinktankRequestError(Exception):
     """
     This exception is raised when there are request errors to thinktank
@@ -90,6 +92,7 @@ def thinktank_request_error_to_error_response(
         error_type="Internal Server Error",
         code="thinktank_request_error",
     )
+
 
 class ThinktankResponseError(Exception):
     """
@@ -155,6 +158,7 @@ def ratelimit_error_to_error_response(
         error_type="Internal Server Error",
         code="rate_limit_error",
     )
+
 
 class HAMResponseError(Exception):
     """

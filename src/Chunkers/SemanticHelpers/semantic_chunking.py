@@ -25,8 +25,10 @@ from src.Shared.RagDocument import RagDocument
 
 config = Config()
 
+
 def get_openai_api_key():
     return config.openai_api_key
+
 
 def semantic_chunking_strategy(text: str) -> dict:
     messages = []

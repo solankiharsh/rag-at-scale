@@ -8,6 +8,7 @@ from src.Loaders.Loader import Loader
 from src.Shared.LocalFile import LocalFile
 from src.Shared.RagDocument import RagDocument
 from src.Shared.Selector import Selector
+from utils.platform_commons.logger import logger
 
 
 class CSVLoader(Loader):
@@ -78,8 +79,10 @@ class CSVLoader(Loader):
     def load(self, file: LocalFile) -> Generator[RagDocument, None, None]:
         source_column = self.source_column
         encoding = self.encoding  # modify to use encoding
-        csv_args = self.csv_args  # default to id
-        id_key = self.id_key  # default to id
+        # csv_args = self.csv_args  # default to id
+        csv_args = self.csv_args if self.csv_args is not None else {}
+        logger.debug(f"CSVLoader using csv_args: {csv_args}")
+        id_key = self.id_key
 
         with open(file.file_path, newline="", encoding=encoding) as csvfile:
             csv_reader = csv.DictReader(csvfile, **csv_args)  # Use csv_args if provided

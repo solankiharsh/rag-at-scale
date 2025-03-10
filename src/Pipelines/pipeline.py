@@ -1,12 +1,9 @@
-# src/pipeline/pipeline.py
-
 import asyncio
 import os
 from asyncio.log import logger
 from collections.abc import Generator
-from datetime import datetime
-
-from tenacity import retry, stop_after_attempt, wait_exponential
+from datetime import UTC, datetime
+from typing import Any
 
 from src.Chunkers.Chunker import Chunker
 from src.EmbedConnectors.EmbedConnector import EmbedConnector
@@ -38,7 +35,8 @@ class Pipeline:
         self.id = pipeline_config.id
         self.name = pipeline_config.name
         self.config = pipeline_config
-        self.state = {}
+        self.state: dict[str, Any] = {}
+        self.created_at = datetime.now(UTC)
 
         logger.info(f"Initializing pipeline: {self.name} with ID: {self.id}")
 
@@ -82,7 +80,7 @@ class Pipeline:
     def _initialize_sink(self, sink_config) -> SinkConnector:
         """Initializes the sink connector."""
         return SinkConnectorFactory.get_sink(sink_config.type, sink_config.settings)
-    
+
     def _update_state(self, step: str, status: str):
         self.state[step] = {
             "status": status,
@@ -92,17 +90,17 @@ class Pipeline:
     def _get_file_extension(self, file_path: str) -> str:
         """Extracts and returns the file extension from the given file path."""
         return os.path.splitext(file_path)[1].lstrip(".").lower() or "unknown"
-    
+
     def run_extraction(self, extract_type: str, last_extraction=None) -> Generator:
         for source in self.sources:
             file_iterator = (
-                source.list_files_full() if extract_type == "full" else \
-                source.list_files_delta(last_run=last_extraction)
+                source.list_files_full()
+                if extract_type == "full"
+                else source.list_files_delta(last_run=last_extraction)
             )
             for file in file_iterator:
                 yield source, file
-                
-                
+
     async def process_and_ingest_document(
         self, source: SourceConnector, cloud_file: CloudFileSchema
     ):
@@ -203,7 +201,7 @@ class Pipeline:
                 logger.error(f"Error processing document {cloud_file.id}: {e}", exc_info=True)
                 raise
 
-    @retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=1, max=60))
+    # @retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=1, max=60))
     async def embed_and_ingest(self, chunks: list[RagDocument]) -> int:
         logger.info(f"Starting embedding for {len(chunks)} chunks.")
         vector_embeddings, _ = await self.embed_model.embed(documents=chunks)
@@ -214,18 +212,35 @@ class Pipeline:
         vectors_written = self.sink.store(vectors_to_store)
         logger.info(f"Stored {vectors_written} vectors in the vector database.")
         return vectors_written
-    
+
     async def run_pipeline(self, extract_type: str):
         tasks = []
         async for source, file in self.run_extraction(extract_type):
             tasks.append(self.process_and_ingest_document(source, file))
-        
+
         results = await asyncio.gather(*tasks, return_exceptions=True)
         for result in results:
             if isinstance(result, Exception):
                 logger.error(f"Pipeline run failed with error: {result}")
 
         logger.info("Pipeline run completed.")
+
+    def search(self, query: str, top_k: int = 5) -> list[dict]:
+        """
+        Search the sink for relevant data based on the query.
+
+        Args:
+            query (str): The search query.
+            top_k (int): Number of top results to return.
+
+        Returns:
+            List[Dict]: The top-k search results.
+        """
+        if not self.sink:
+            raise ValueError("Sink not configured for this pipeline")
+
+        results = self.sink.search(query, top_k)
+        return results
 
     # async def embed_and_ingest(self, chunks: list[RagDocument]) -> int:
     #     """
@@ -244,7 +259,7 @@ class Pipeline:
     #     else:
     #         # If no event loop is running, use `asyncio.run()`
     #         vector_embeddings, _ = asyncio.run(self.embed_model.embed(documents=chunks))
-        
+
     #     logger.info("Embeddings generated successfully.")
 
     #     vectors_to_store = [

@@ -13,6 +13,7 @@ from src.Shared.RagSearch import RagSearchResult
 from src.Shared.RagSinkInfo import RagSinkInfo
 from src.SinkConnectors.filter_utils import FilterCondition
 from src.SinkConnectors.SinkConnector import SinkConnector
+from utils.platform_commons.logger import logger
 
 # Import your types for RagSearchResult and RagSinkInfo, FilterCondition, etc.
 
@@ -42,6 +43,23 @@ class ElasticsearchSink(SinkConnector):
         extra = Extra.allow
         arbitrary_types_allowed = True
 
+    def __init__(self, **data):
+        super().__init__(**data)
+        self.es_client = Elasticsearch(self.hosts)
+
+    def ensure_index_exists(self):
+        """Ensure the Elasticsearch index exists, create if missing."""
+        try:
+            if not self.es_client.indices.exists(index=self.index):
+                logger.warning(f"Index '{self.index}' not found. Creating index...")
+                self.es_client.indices.create(index=self.index)
+                logger.info(f"Index '{self.index}' created successfully.")
+            else:
+                logger.info(f"Index '{self.index}' already exists.")
+        except Exception as e:
+            logger.error(f"Failed to check/create index: {e}")
+            raise
+
     @validator("sink_name", pre=True, always=True)
     def validate_sink_name(cls, value):
         if not value:
@@ -68,23 +86,50 @@ class ElasticsearchSink(SinkConnector):
 
     def store(self, vectors_to_store: list[Any]) -> int:
         try:
-            es = Elasticsearch(self.hosts)
+            self.ensure_index_exists()
             vectors_stored = 0
             for vector in vectors_to_store:
                 doc = {"vector": vector.vector, "metadata": vector.metadata}
-                response = es.index(index=self.index, id=vector.id, document=doc)
+                response = self.es_client.index(index=self.index, id=vector.id, document=doc)
                 if response.get("result") in ["created", "updated"]:
                     vectors_stored += 1
-            es.indices.refresh(index=self.index)
+            self.es_client.indices.refresh(index=self.index)
         except Exception as e:
             raise ElasticsearchInsertionException(
                 f"Failed to store vectors in Elasticsearch. Exception: {e}"
             )
         return vectors_stored
 
+    def get_documents(self, size: int = 10) -> list[RagSearchResult]:
+        """
+        Retrieve documents stored in the Elasticsearch index using a match_all query.
+
+        Args:
+            size (int): Number of documents to retrieve.
+
+        Returns:
+            List[RagSearchResult]: A list of search results.
+        """
+        try:
+            query_body = {"size": size, "query": {"match_all": {}}}
+            response = self.es_client.search(index=self.index, body=query_body)
+            results = []
+            for hit in response["hits"]["hits"]:
+                result = RagSearchResult(
+                    id=hit["_id"],
+                    metadata=hit["_source"].get("metadata", {}),
+                    score=hit["_score"],
+                    vector=hit["_source"].get("vector"),
+                )
+                results.append(result)
+            return results
+        except Exception as e:
+            logger.error(f"Failed to retrieve documents: {e}", exc_info=True)
+            raise ElasticsearchQueryException(f"Failed to query Elasticsearch. Exception: {e}")
+
     def search(
         self, vector: list[float], number_of_results: int, filters: list[FilterCondition] = []
-    ) -> list[Any]:
+    ) -> list[RagSearchResult]:
         try:
             es = Elasticsearch(self.hosts)
             must_clauses = []
@@ -104,13 +149,16 @@ class ElasticsearchSink(SinkConnector):
             response = es.search(index=self.index, body=query_body)
             results = []
             for hit in response["hits"]["hits"]:
-                results.append(
-                    RagSearchResult(
+                try:
+                    result = RagSearchResult(
                         id=hit["_id"],
                         metadata=hit["_source"].get("metadata", {}),
                         score=hit["_score"],
+                        vector=hit["_source"].get("vector"),
                     )
-                )
+                    results.append(result)
+                except Exception as e:
+                    logger.error(f"Failed to parse search result: {e}, hit: {hit}")
         except Exception as e:
             raise ElasticsearchQueryException(f"Failed to query Elasticsearch. Exception: {e}")
         return results

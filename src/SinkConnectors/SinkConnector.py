@@ -34,6 +34,10 @@ class SinkConnector(ABC, BaseModel):
         """Store vectors with a given service"""
 
     @abstractmethod
+    def get_documents(self, size: int) -> list[RagSearchResult]:
+        """Get vectors for a specific file id"""
+
+    @abstractmethod
     def search(
         self, vector: list[float], number_of_results: int, filters: list[FilterCondition] = {}
     ) -> list[RagSearchResult]:

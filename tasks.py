@@ -1,6 +1,5 @@
-# src/tasks.py
-
 from celery import Celery
+from elasticsearch import NotFoundError
 
 from config import config
 from src.Pipelines.Pipeline import Pipeline
@@ -88,10 +87,22 @@ def data_processing_task(
 @app.task
 def data_embed_ingest_task(pipeline_config_dict: dict, chunks_dicts: list[dict]):
     pipeline = Pipeline.create_pipeline(pipeline_config_dict)
-    logger.info(f"chunks_dicts: {chunks_dicts}")
     chunks: list[RagDocument] = [RagDocument.as_file(chunk_dict) for chunk_dict in chunks_dicts]
 
-    
+    logger.info(f"Starting embedding and ingestion task for {len(chunks)} chunks")
 
-    vectors_written = pipeline.embed_and_ingest(chunks)  # Now pipeline handles embed and ingest
-    print(f"Finished embedding and storing {vectors_written} vectors")
+    logger.info(f"pipeline_config_dict: {pipeline_config_dict}")
+
+    index_name = pipeline_config_dict.get("sink", {}).get("settings").get("index")
+    if not index_name:
+        logger.error("Index name missing in pipeline config.")
+        return
+
+    try:
+        # Embed and ingest, the sink now handles index creation
+        vectors_written = pipeline.embed_and_ingest(chunks)
+    except NotFoundError:
+        logger.error(f"Index '{index_name}' not found during ingestion, even after sink handling.")
+        return
+
+    logger.info(f"Finished embedding and storing {vectors_written} vectors in index '{index_name}'")

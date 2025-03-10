@@ -31,6 +31,7 @@ metrics = Metrics(
     blossom_id=config.blossom_id,
 )
 
+
 class ThinkTankEmbedModel(EmbedConnector):
     api_key: str
 
@@ -62,7 +63,7 @@ class ThinkTankEmbedModel(EmbedConnector):
         except Exception as e:
             logger.error(f"ThinkTank embedding validation failed: {e}")
             return False
-        
+
     async def embed(self, documents: list[RagDocument]) -> tuple[list, dict]:
         queries = [doc.content for doc in documents]
         user = User(id="dummy", name="Dummy User", tap_app_name="dummy")
@@ -79,7 +80,7 @@ class ThinkTankEmbedModel(EmbedConnector):
         vectors = [item["embedding"] for item in embeddings_response.get("content_embedding", [])]
         usage = embeddings_response.get("usage", {})
         return vectors, usage
-    
+
     async def generate_thinktank_embeddings(
         self,
         model: str,
@@ -146,7 +147,10 @@ class ThinkTankEmbedModel(EmbedConnector):
                 start_time = time.time()
                 # TODO Search uses lifespan httpx, Ingest needs to use same after it refactors
                 embeddings_response = await httpx_client.post(
-                    url=embeddings_url, json=thinktank_embeddings_body, headers=auth_header, timeout=35
+                    url=embeddings_url,
+                    json=thinktank_embeddings_body,
+                    headers=auth_header,
+                    timeout=35,
                 )
 
                 if embeddings_response.status_code == 401:
@@ -222,7 +226,6 @@ class ThinkTankEmbedModel(EmbedConnector):
             )
             raise ThinktankRequestError(e)
 
-
     async def validate_thinktank_access(self, model: str | None, user: User):
         """
         Helper function to validate thinktank access.
@@ -233,9 +236,7 @@ class ThinkTankEmbedModel(EmbedConnector):
         thinktank_url = config.thinktank
         auth_url = f"{thinktank_url}/v1/auth"
         if model is not None:
-            auth_url = (
-                thinktank_url + f"/v1/models/{model or config.default_embedding_model}"
-            )
+            auth_url = thinktank_url + f"/v1/models/{model or config.default_embedding_model}"
         auth_header = {"Authorization": user.token}
         try:
             async with httpx.AsyncClient() as client:
