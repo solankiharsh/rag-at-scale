@@ -4,6 +4,9 @@ import asyncio
 import os
 from asyncio.log import logger
 from collections.abc import Generator
+from datetime import datetime
+
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 from src.Chunkers.Chunker import Chunker
 from src.EmbedConnectors.EmbedConnector import EmbedConnector
@@ -35,6 +38,7 @@ class Pipeline:
         self.id = pipeline_config.id
         self.name = pipeline_config.name
         self.config = pipeline_config
+        self.state = {}
 
         logger.info(f"Initializing pipeline: {self.name} with ID: {self.id}")
 
@@ -48,8 +52,6 @@ class Pipeline:
         sources = []
         for config in source_configs:
             try:
-                logger.info(f"config.type: {config.type}")
-                logger.info(f"config.settings: {config.settings}")
                 source_connector = DataConnectorFactory.get_data_connector(
                     data_connector_name=config.type, connector_information=config.settings
                 )
@@ -80,10 +82,50 @@ class Pipeline:
     def _initialize_sink(self, sink_config) -> SinkConnector:
         """Initializes the sink connector."""
         return SinkConnectorFactory.get_sink(sink_config.type, sink_config.settings)
+    
+    def _update_state(self, step: str, status: str):
+        self.state[step] = {
+            "status": status,
+            "timestamp": datetime.utcnow().isoformat(),
+        }
 
     def _get_file_extension(self, file_path: str) -> str:
         """Extracts and returns the file extension from the given file path."""
         return os.path.splitext(file_path)[1].lstrip(".").lower() or "unknown"
+    
+    def run_extraction(self, extract_type: str, last_extraction=None) -> Generator:
+        for source in self.sources:
+            file_iterator = (
+                source.list_files_full() if extract_type == "full" else \
+                source.list_files_delta(last_run=last_extraction)
+            )
+            for file in file_iterator:
+                yield source, file
+                
+                
+    async def process_and_ingest_document(
+        self, source: SourceConnector, cloud_file: CloudFileSchema
+    ):
+        try:
+            self._update_state(cloud_file.id, "processing")
+            chunks = []
+
+            for local_file in source.download_files(cloud_file=cloud_file):
+                file_obj = self._create_local_file(local_file, cloud_file)
+                file_extension = self._get_file_extension(file_obj.file_path)
+                loader = LoaderFactory.get_loader(file_extension, cloud_file.metadata or {})
+
+                for document in loader.load(file=file_obj):
+                    chunker = self._get_chunker(cloud_file.metadata or {})
+                    for chunk_batch in chunker.chunk([document]):
+                        chunks.extend(chunk_batch)
+
+            if chunks:
+                await self.embed_and_ingest(chunks)
+                self._update_state(cloud_file.id, "completed")
+        except Exception as e:
+            logger.error(f"Error processing document {cloud_file.id}: {e}")
+            self._update_state(cloud_file.id, "failed")
 
     def _create_local_file(self, local_file, cloud_file) -> LocalFile:
         """Creates a LocalFile object from a local file or file path."""
@@ -113,27 +155,24 @@ class Pipeline:
 
     @staticmethod
     def create_pipeline(pipeline_config_dict: dict) -> "Pipeline":
-        """Creates a pipeline instance from a configuration dictionary."""
         config = PipelineConfigSchema(**pipeline_config_dict)
-        logger.info(f"Pipeline configuration loaded: {config}")
         return Pipeline(pipeline_config=config)
 
     def as_json(self) -> dict:
-        """Returns the pipeline configuration as a dictionary."""
         return self.config.dict()
 
-    def run_extraction(self, extract_type: str, last_extraction=None) -> Generator:
-        """
-        Runs the extraction process for each source, yielding extracted files.
-        """
-        for source in self.sources:
-            file_iterator = (
-                source.list_files_full()
-                if extract_type == "full"
-                else source.list_files_delta(last_run=last_extraction)
-            )
-            for file in file_iterator:
-                yield source, file
+    # def run_extraction(self, extract_type: str, last_extraction=None) -> Generator:
+    #     """
+    #     Runs the extraction process for each source, yielding extracted files.
+    #     """
+    #     for source in self.sources:
+    #         file_iterator = (
+    #             source.list_files_full()
+    #             if extract_type == "full"
+    #             else source.list_files_delta(last_run=last_extraction)
+    #         )
+    #         for file in file_iterator:
+    #             yield source, file
 
     def process_document(self, source: SourceConnector, cloud_file: CloudFileSchema) -> Generator:
         """
@@ -164,33 +203,57 @@ class Pipeline:
                 logger.error(f"Error processing document {cloud_file.id}: {e}", exc_info=True)
                 raise
 
+    @retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=1, max=60))
     async def embed_and_ingest(self, chunks: list[RagDocument]) -> int:
-        """
-        Embeds document chunks and ingests them into the sink.
-        """
         logger.info(f"Starting embedding for {len(chunks)} chunks.")
-
-        if not hasattr(self, "embed_model") or not callable(
-            getattr(self.embed_model, "embed", None)
-        ):
-            raise AttributeError("'Pipeline' object has no valid 'embed_model' instance.")
-
-        if asyncio.get_event_loop().is_running():
-            # If already in an event loop, use `await`
-            vector_embeddings, _ = await self.embed_model.embed(documents=chunks)
-        else:
-            # If no event loop is running, use `asyncio.run()`
-            vector_embeddings, _ = asyncio.run(self.embed_model.embed(documents=chunks))
-        
-        logger.info("Embeddings generated successfully.")
-
+        vector_embeddings, _ = await self.embed_model.embed(documents=chunks)
         vectors_to_store = [
             RagVector(id=chunk.id, vector=embedding, metadata=chunk.metadata)
             for chunk, embedding in zip(chunks, vector_embeddings)
         ]
-
-        logger.info(f"Prepared {len(vectors_to_store)} vectors for storage.")
         vectors_written = self.sink.store(vectors_to_store)
         logger.info(f"Stored {vectors_written} vectors in the vector database.")
-
         return vectors_written
+    
+    async def run_pipeline(self, extract_type: str):
+        tasks = []
+        async for source, file in self.run_extraction(extract_type):
+            tasks.append(self.process_and_ingest_document(source, file))
+        
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        for result in results:
+            if isinstance(result, Exception):
+                logger.error(f"Pipeline run failed with error: {result}")
+
+        logger.info("Pipeline run completed.")
+
+    # async def embed_and_ingest(self, chunks: list[RagDocument]) -> int:
+    #     """
+    #     Embeds document chunks and ingests them into the sink.
+    #     """
+    #     logger.info(f"Starting embedding for {len(chunks)} chunks.")
+
+    #     if not hasattr(self, "embed_model") or not callable(
+    #         getattr(self.embed_model, "embed", None)
+    #     ):
+    #         raise AttributeError("'Pipeline' object has no valid 'embed_model' instance.")
+
+    #     if asyncio.get_event_loop().is_running():
+    #         # If already in an event loop, use `await`
+    #         vector_embeddings, _ = await self.embed_model.embed(documents=chunks)
+    #     else:
+    #         # If no event loop is running, use `asyncio.run()`
+    #         vector_embeddings, _ = asyncio.run(self.embed_model.embed(documents=chunks))
+        
+    #     logger.info("Embeddings generated successfully.")
+
+    #     vectors_to_store = [
+    #         RagVector(id=chunk.id, vector=embedding, metadata=chunk.metadata)
+    #         for chunk, embedding in zip(chunks, vector_embeddings)
+    #     ]
+
+    #     logger.info(f"Prepared {len(vectors_to_store)} vectors for storage.")
+    #     vectors_written = self.sink.store(vectors_to_store)
+    #     logger.info(f"Stored {vectors_written} vectors in the vector database.")
+
+    #     return vectors_written
