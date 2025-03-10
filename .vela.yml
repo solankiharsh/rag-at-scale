@@ -174,76 +174,76 @@ stages:
           api_spec: api-spec/gen_ai_rag_requests-v1.yaml
           post_comments: true
 
-secrets:
+# secrets:
   # Shared secrets for TAP team Docker registry
-  - name: plugin_spec_token
-    key: api-platform/api-platform-team/plugin_spec_token
-    type: shared
-  - name: OAUTH_URL
-    key: GenAI-Platform/rag-service/OAUTH_URL
-    engine: native
-    type: repo
-  - name: OAUTH_NUID_USERNAME
-    key: GenAI-Platform/rag-service/OAUTH_NUID_USERNAME
-    engine: native
-    type: repo
-  - name: OAUTH_NUID_PASSWORD
-    key: GenAI-Platform/rag-service/OAUTH_NUID_PASSWORD
-    engine: native
-    type: repo
-  - name: OAUTH_CLIENT_CREDENTIALS
-    key: GenAI-Platform/rag-service/OAUTH_CLIENT_CREDENTIALS
-    engine: native
-    type: repo
-  - name: AZURE_OPENAI_API_KEY
-    key: GenAI-Platform/rag-service/AZURE_OPENAI_API_KEY
-    engine: native
-    type: repo
-  - name: AZURE_OPENAI_API_VERSION
-    key: GenAI-Platform/rag-service/AZURE_OPENAI_API_VERSION
-    engine: native
-    type: repo
-  - name: AZURE_OPENAI_ENDPOINT
-    key: GenAI-Platform/rag-service/AZURE_OPENAI_ENDPOINT
-    engine: native
-    type: repo
-  - name: api_key
-    key: GenAI-Platform/api_key
-    engine: native
-    type: org
-  - name: client_id
-    key: GenAI-Platform/client_id
-    engine: native
-    type: org
-  - name: client_secret
-    key: GenAI-Platform/client_secret
-    engine: native
-    type: org
-  - name: nuid_username
-    key: GenAI-Platform/nuid_username
-    engine: native
-    type: org
-  - name: nuid_password
-    key: GenAI-Platform/nuid_password
-    engine: native
-    type: org
-  - name: REDIS_CACHE_USERNAME
-    key: GenAI-Platform/rag-service/REDIS_CACHE_USERNAME
-    engine: native
-    type: repo
-  - name: REDIS_CACHE_PASSWORD
-    key: GenAI-Platform/rag-service/REDIS_CACHE_PASSWORD
-    engine: native
-    type: repo
-  - name: SECRET_KEY
-    key: GenAI-Platform/rag-service/SECRET_KEY
-    engine: native
-    type: repo
-  - name: github_token
-    key: GenAI-Platform/github_token
-    engine: native
-    type: org
-  - name: release_slack_webhook
-    key: GenAI-Platform/release_slack_webhook
-    engine: native
-    type: org
+  # - name: plugin_spec_token
+  #   key: api-platform/api-platform-team/plugin_spec_token
+  #   type: shared
+  # - name: OAUTH_URL
+  #   key: GenAI-Platform/rag-service/OAUTH_URL
+  #   engine: native
+  #   type: repo
+  # - name: OAUTH_NUID_USERNAME
+  #   key: GenAI-Platform/rag-service/OAUTH_NUID_USERNAME
+  #   engine: native
+  #   type: repo
+  # - name: OAUTH_NUID_PASSWORD
+  #   key: GenAI-Platform/rag-service/OAUTH_NUID_PASSWORD
+  #   engine: native
+  #   type: repo
+  # - name: OAUTH_CLIENT_CREDENTIALS
+  #   key: GenAI-Platform/rag-service/OAUTH_CLIENT_CREDENTIALS
+  #   engine: native
+  #   type: repo
+  # - name: AZURE_OPENAI_API_KEY
+  #   key: GenAI-Platform/rag-service/AZURE_OPENAI_API_KEY
+  #   engine: native
+  #   type: repo
+  # - name: AZURE_OPENAI_API_VERSION
+  #   key: GenAI-Platform/rag-service/AZURE_OPENAI_API_VERSION
+  #   engine: native
+  #   type: repo
+  # - name: AZURE_OPENAI_ENDPOINT
+  #   key: GenAI-Platform/rag-service/AZURE_OPENAI_ENDPOINT
+  #   engine: native
+  #   type: repo
+  # - name: api_key
+  #   key: GenAI-Platform/api_key
+  #   engine: native
+  #   type: org
+  # - name: client_id
+  #   key: GenAI-Platform/client_id
+  #   engine: native
+  #   type: org
+  # - name: client_secret
+  #   key: GenAI-Platform/client_secret
+  #   engine: native
+  #   type: org
+  # - name: nuid_username
+  #   key: GenAI-Platform/nuid_username
+  #   engine: native
+  #   type: org
+  # - name: nuid_password
+  #   key: GenAI-Platform/nuid_password
+  #   engine: native
+  #   type: org
+  # - name: REDIS_CACHE_USERNAME
+  #   key: GenAI-Platform/rag-service/REDIS_CACHE_USERNAME
+  #   engine: native
+  #   type: repo
+  # - name: REDIS_CACHE_PASSWORD
+  #   key: GenAI-Platform/rag-service/REDIS_CACHE_PASSWORD
+  #   engine: native
+  #   type: repo
+  # - name: SECRET_KEY
+  #   key: GenAI-Platform/rag-service/SECRET_KEY
+  #   engine: native
+  #   type: repo
+  # - name: github_token
+  #   key: GenAI-Platform/github_token
+  #   engine: native
+  #   type: org
+  # - name: release_slack_webhook
+  #   key: GenAI-Platform/release_slack_webhook
+  #   engine: native
+  #   type: org
