@@ -170,7 +170,7 @@ stages:
           tags:
             - "b${VELA_BUILD_COMMIT:0:8}"
         ruleset:
-          branch: dev
+          branch: master
           event: push
       - name: docker-publish-stage
         image: docker.target.com/vela-plugins/kaniko:v0.16.0-1@sha256:354a456fa38304894abcd110ca138bc89d10f1b38b5f1069f4a7f5c5a32bf2b1
