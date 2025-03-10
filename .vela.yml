@@ -1,0 +1,248 @@
+version: "1"
+
+python_image: &python_image
+  image: docker.target.com/app/tgt-python-poetry:3.11-debian-slim-bookworm
+
+install_commands:
+  - &install_commands |-
+    poetry install
+
+
+services:
+  - name: elasticsearch
+    image: hub.docker.target.com/elasticsearch:8.12.2
+    environment:
+      - node.name=es01
+      - cluster.name=es-docker-cluster-0
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+  - name: elasticsearch_store_tm
+    image: hub.docker.target.com/elasticsearch:8.12.2
+    environment:
+      - node.name=es02
+      - cluster.name=es-docker-cluster-store-tm
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+  - name: elasticsearch_tes
+    image: hub.docker.target.com/elasticsearch:8.12.2
+    environment:
+      - node.name=es03
+      - cluster.name=es-docker-cluster-tes
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+  - name: postgres
+    image: hub.docker.target.com/postgres:15.7
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=ragaas
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_MAX_CONNECTIONS=200
+  - name: moto
+    image: motoserver/moto:latest
+    ports:
+      - "5000:5000"
+    environment:
+      - MOTO_PORT=5000
+  - name: redis
+    image: redis:latest
+    restart: always
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--loglevel", "debug"]
+
+
+stages:
+  linting:
+    steps:
+      - name: linting_check
+        <<: *python_image
+        commands:
+          - *install_commands
+          - poetry run ruff check .
+        ruleset:
+          event: [ pull_request ]
+
+  typing:
+    steps:
+      - name: typing_check
+        <<: *python_image
+        commands:
+          - *install_commands
+          - poetry run python -m mypy .
+        ruleset:
+          event: [ pull_request ]
+
+  build:
+    steps:
+      - name: populate_docker_credentials
+        image: docker.target.com/managed/vela-plugins/artifactory-managed-auth:v1.4.0@sha256:4396697f30b3e6e42255350f19cbd95d0db8452b118e6fd444f2b7e3929b1a1f
+        parameters:
+            auth_server: https://artifactorytokenmanager.prod.target.com
+      - name: docker-publish-dev
+        image: docker.target.com/vela-plugins/kaniko:v0.16.0-1@sha256:354a456fa38304894abcd110ca138bc89d10f1b38b5f1069f4a7f5c5a32bf2b1
+        pull: true
+        parameters:
+          registry: docker.target.com
+          cache: true
+          repo: docker.target.com/managed/genai-platform/rag-at-scale
+          tags:
+            - "b${VELA_BUILD_COMMIT:0:8}"
+        ruleset:
+          branch: master
+          event: push
+      - name: docker-publish-stage
+        image: docker.target.com/vela-plugins/kaniko:v0.16.0-1@sha256:354a456fa38304894abcd110ca138bc89d10f1b38b5f1069f4a7f5c5a32bf2b1
+        pull: true
+        parameters:
+          registry: docker.target.com
+          cache: true
+          repo: docker.target.com/managed/genai-platform/rag-at-scale
+          tags:
+            - "r${VELA_BUILD_COMMIT:0:8}"
+        ruleset:
+          branch: master
+          event: push
+
+      - name: create_change_request
+        image: docker.target.com/toolshed/vela-change-request:4.1.1
+        secrets:
+          - api_key
+          - client_id
+          - client_secret
+          - nuid_username
+          - nuid_password
+        parameters:
+          action: create
+          application_name: RAG service
+          change_template: GenAI Platform Change Template
+          configuration_item_id: CI15837495
+        ruleset:
+          event: tag
+          branch: [ main, refs/tags/release-v* ]
+          tag: [ "release-*" ]
+
+      - name: stage-promote-prod
+        image: docker.target.com/vela-plugins/artifactory:v0.8.0-1@sha256:482e9741f58d0c7fa7ee4dbfb309d3d226fc03140d8e0fbfe326551d74b1ea5e
+        pull: not_present
+        parameters:
+          action: docker-promote
+          docker_registry: managed/genai-platform/rag-at-scale
+          target_docker_registry: managed/genai-platform/rag-at-scale
+          copy: true
+          tag: "r${VELA_BUILD_COMMIT:0:8}"
+          target_tags: "${VELA_BUILD_TAG}"
+        ruleset:
+          event: tag
+          branch: [ main, refs/tags/release-v* ]
+          tag: [ "release-*" ]
+
+      - name: announce-release
+        ruleset:
+          event: tag
+          branch: [ main, refs/tags/release-v* ]
+        image: docker.target.com/managed/genai-platform/release-tracker:latest
+        secrets:
+          - source: github_token
+            target: github_token
+          - source: release_slack_webhook
+            target: slack_webhook
+
+      - name: upload-spec-to-dev-portal
+        image: docker.target.com/api-platform/api-specs-plugin:v1.2.0
+        secrets: [ plugin_spec_token ]
+        ruleset:
+          branch: main
+          event: [ push, pull_request ]
+        pull: true
+        parameters:
+          api_name: gen_ai_rag_requests-v1
+          api_spec: api-spec/gen_ai_rag_requests-v1.yaml
+          post_comments: true
+
+secrets:
+  # Shared secrets for TAP team Docker registry
+  - name: plugin_spec_token
+    key: api-platform/api-platform-team/plugin_spec_token
+    type: shared
+  - name: OAUTH_URL
+    key: GenAI-Platform/rag-service/OAUTH_URL
+    engine: native
+    type: repo
+  - name: OAUTH_NUID_USERNAME
+    key: GenAI-Platform/rag-service/OAUTH_NUID_USERNAME
+    engine: native
+    type: repo
+  - name: OAUTH_NUID_PASSWORD
+    key: GenAI-Platform/rag-service/OAUTH_NUID_PASSWORD
+    engine: native
+    type: repo
+  - name: OAUTH_CLIENT_CREDENTIALS
+    key: GenAI-Platform/rag-service/OAUTH_CLIENT_CREDENTIALS
+    engine: native
+    type: repo
+  - name: AZURE_OPENAI_API_KEY
+    key: GenAI-Platform/rag-service/AZURE_OPENAI_API_KEY
+    engine: native
+    type: repo
+  - name: AZURE_OPENAI_API_VERSION
+    key: GenAI-Platform/rag-service/AZURE_OPENAI_API_VERSION
+    engine: native
+    type: repo
+  - name: AZURE_OPENAI_ENDPOINT
+    key: GenAI-Platform/rag-service/AZURE_OPENAI_ENDPOINT
+    engine: native
+    type: repo
+  - name: api_key
+    key: GenAI-Platform/api_key
+    engine: native
+    type: org
+  - name: client_id
+    key: GenAI-Platform/client_id
+    engine: native
+    type: org
+  - name: client_secret
+    key: GenAI-Platform/client_secret
+    engine: native
+    type: org
+  - name: nuid_username
+    key: GenAI-Platform/nuid_username
+    engine: native
+    type: org
+  - name: nuid_password
+    key: GenAI-Platform/nuid_password
+    engine: native
+    type: org
+  - name: REDIS_CACHE_USERNAME
+    key: GenAI-Platform/rag-service/REDIS_CACHE_USERNAME
+    engine: native
+    type: repo
+  - name: REDIS_CACHE_PASSWORD
+    key: GenAI-Platform/rag-service/REDIS_CACHE_PASSWORD
+    engine: native
+    type: repo
+  - name: SECRET_KEY
+    key: GenAI-Platform/rag-service/SECRET_KEY
+    engine: native
+    type: repo
+  - name: github_token
+    key: GenAI-Platform/github_token
+    engine: native
+    type: org
+  - name: release_slack_webhook
+    key: GenAI-Platform/release_slack_webhook
+    engine: native
+    type: org

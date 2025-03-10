@@ -1,36 +1,32 @@
-# Use an official Python runtime as a parent image
-FROM python:3.9-slim
+# Use your target base image with Poetry pre-installed
+FROM docker.target.com/app/tgt-python-poetry:3.11-debian-slim-bookworm
 
-# Set environment variables for production
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+# Install supervisor, curl (for runtime-connector), and poppler-utils (for pdf2image)
+RUN apt-get update -qq && \
+    apt-get install -y supervisor poppler-utils curl
 
-# Set work directory
-WORKDIR /app
+# Install runtime-connector
+ENV RUNTIME_VERSION=v2.4.6
+RUN cd / && \
+    curl -sk "https://binrepo.target.com/artifactory/platform/runtime-connector/${RUNTIME_VERSION}/runtime-connector-linux-amd64-${RUNTIME_VERSION}.tgz" \
+    | tar -C / -xvzf -
 
-# Install system dependencies (if required, e.g., build-essential for some packages)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
+# Copy your project files
+COPY . ./
 
-# Install Poetry
-RUN pip install --upgrade pip && pip install poetry
+# Install dependencies via Poetry (without dev dependencies)
+RUN poetry install --no-interaction --no-ansi
 
-# Copy only the dependency files to leverage Docker cache
-COPY pyproject.toml poetry.lock* ./
+# Copy Supervisor configuration (ensure your supervisord.conf defines your processes)
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# Install project dependencies (without dev dependencies)
-RUN poetry config virtualenvs.create false \
-    && poetry install --no-dev --no-interaction --no-ansi
+# Expose the ports you need (e.g., 8000 for FastAPI and 5555 for Flower)
+EXPOSE 8000 5555
 
-# Copy the rest of the project
-COPY . .
+# Use runtime-connector to run the entrypoint that launches supervisor (which then starts uvicorn, celery, etc.)
+ENTRYPOINT ["/runtime-connector", "--", "/bin/sh", "./entrypoint.sh"]
 
-# Download NLTK data (punkt and averaged_perceptron_tagger)
-RUN python -c "import nltk; nltk.download('punkt'); nltk.download('averaged_perceptron_tagger')"
-
-# Expose port 8000 for the FastAPI app
-EXPOSE 8000
-
-# Default command (overridden in docker-compose for worker)
-CMD ["uvicorn", "src.app:app", "--host", "0.0.0.0", "--port", "8000"]
+# Labels for metadata
+LABEL version="1.0" \
+    author="Z0084K9" \
+    maintainer="Harsh Solanki <Harsh.Solanki@target.com>"
