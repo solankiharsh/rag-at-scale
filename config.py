@@ -8,11 +8,11 @@ load_dotenv()
 
 class Config:
     REDIS_BROKER_URL = os.getenv("REDIS_BROKER_URL", "redis://localhost:6379/0")
-    EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME", "all-mpnet-base-v2")  # Example
+    EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME", "all-mpnet-base-v2")
     VECTOR_DB_API_KEY = os.getenv("VECTOR_DB_API_KEY")
     VECTOR_DB_ENVIRONMENT = os.getenv("VECTOR_DB_ENVIRONMENT")
     VECTOR_DB_INDEX_NAME = os.getenv("VECTOR_DB_INDEX_NAME", "rag-pipeline-index")
-    openai_api_key: str = os.getenv("OPENAI_API_KEY", "YOUR_OPENAI_API_KEY")  # Added default value
+    openai_api_key: str = os.getenv("OPENAI_API_KEY", "YOUR_OPENAI_API_KEY")
     openai_embeddings_endpoint: str = os.getenv(
         "OPENAI_EMBEDDINGS_ENDPOINT", "https://api.openai.com/v1/embeddings"
     )  # Added default value
@@ -34,11 +34,11 @@ class Config:
     latency_threshold_ms: float = 1000.0
     max_batch_size: int = 500
     min_batch_size: int = 50
-    thinktank: str = os.getenv("THINKTANK_URL", "YOUR_THINKTANK_URL")  # Added default value
+    thinktank: str = os.getenv("THINKTANK_URL", "YOUR_THINKTANK_URL")
     default_embedding_model: str = os.getenv(
         "DEFAULT_EMBEDDING_MODEL", "text-embedding-ada-002"
     )  # Added default value
-    oauth_url: str = os.getenv("OAUTH_URL", "YOUR_OAUTH_URL")  # OAuth URL
+    oauth_url: str = os.getenv("OAUTH_URL", "YOUR_OAUTH_URL")
     oauth_client_credentials: str = os.getenv(
         "OAUTH_CLIENT_CREDENTIALS", "YOUR_OAUTH_CLIENT_CREDENTIALS"
     )  # OAuth client credentials (Basic Auth format)
@@ -51,8 +51,7 @@ class Config:
     metrics_enabled: bool = (
         os.getenv("METRICS_ENABLED", "True").lower() == "true"
     )  # Default to True, convert string to boolean
-    metrics_dsn: str = os.getenv("METRICS_DSN", "influxdb://localhost:8086/metrics")  # Metrics DSN
-    blossom_id: str = os.getenv("BLOSSOM_ID", "YOUR_BLOSSOM_ID")  # Blossom ID
+    metrics_dsn: str = os.getenv("METRICS_DSN", "influxdb://localhost:8086/metrics")
     markdown_headers_to_split_on: list = [
         ("#", "Header 1"),
         ("##", "Header 2"),

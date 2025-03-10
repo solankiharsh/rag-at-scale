@@ -20,10 +20,15 @@
 # The code is designed to be used as part of the RecursiveChunker class in the RAG framework.
 import openai
 
+from config import Config
 from src.Shared.RagDocument import RagDocument
 
+config = Config()
 
-def semantic_chunking_strategy(text: str) -> str:
+def get_openai_api_key():
+    return config.openai_api_key
+
+def semantic_chunking_strategy(text: str) -> dict:
     messages = []
     messages = [
         {
@@ -45,15 +50,15 @@ def semantic_chunking_strategy(text: str) -> str:
         },
         {"role": "user", "content": text},
     ]
-    client = openai.OpenAI()
+    client = openai.OpenAI(api_key=get_openai_api_key())
     response = client.chat.completions.create(
         model="gpt-4-0613", messages=messages, temperature=0.9
     )
     response_message = response.choices[0].message
-    return response_message
+    return {"content": response_message.content}
 
 
-def semantic_chunking_strategy_code(text: str, chunking_strategy: str) -> str:
+def semantic_chunking_strategy_code(text: str, chunking_strategy: str) -> dict:
     messages = []
     messages = [
         {
@@ -63,26 +68,30 @@ def semantic_chunking_strategy_code(text: str, chunking_strategy: str) -> str:
                 + "Output the code in this format: ```python def split_text_into_chunks(text): "
                 + "<Insert Code>```"
                 + "The function `split_text_into_chunks` should output an array of text chunks."
-                "Implement the strategy provided by the user to help split text."
+                + "Implement the strategy provided by the user to help split text."
             ),
         },
         {"role": "user", "content": chunking_strategy},
     ]
-    client = openai.OpenAI()
+    # Use openai.OpenAI directly but configure API key from config
+    client = openai.OpenAI(api_key=get_openai_api_key())
     response = client.chat.completions.create(
         model="gpt-4-0613", messages=messages, temperature=0.9
     )
     response_message = response.choices[0].message
-    return response_message
+    return {"content": response_message.content}
 
 
 def semantic_chunking_code(text: str) -> str:
     fixed_text = cut_text(text)
-    chunking_strategy = semantic_chunking_strategy(text=fixed_text)["content"]
-    chunking_code = semantic_chunking_strategy_code(
+    chunking_strategy_response = semantic_chunking_strategy(text=fixed_text)
+    chunking_strategy = chunking_strategy_response["content"]
+
+    chunking_code_response = semantic_chunking_strategy_code(
         text=fixed_text, chunking_strategy=chunking_strategy
-    )["content"]
-    chunking_code_exec = chunking_code.split("```python")[1].split("```")[0]
+    )
+    chunking_code = chunking_code_response["content"]
+    chunking_code_exec = chunking_code.split("`python")[1].split("`")[0]
     return chunking_code_exec
 
 
