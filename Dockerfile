@@ -14,6 +14,12 @@ RUN cd / && \
 # Copy your project files
 COPY . ./
 
+# Disable Poetry virtualenv creation so that dependencies are installed into the system environment
+RUN poetry config virtualenvs.create false
+
+# (Optional) Clear Poetry cache to remove any old cached files that might conflict
+RUN poetry cache clear --all pypi
+
 # Install dependencies via Poetry (without dev dependencies)
 RUN poetry install --no-interaction --no-ansi
 
@@ -28,5 +34,5 @@ ENTRYPOINT ["/runtime-connector", "--", "/bin/sh", "./entrypoint.sh"]
 
 # Labels for metadata
 LABEL version="1.0" \
-    author="Z0084K9" \
-    maintainer="Harsh Solanki <Harsh.Solanki@target.com>"
+      author="Z0084K9" \
+      maintainer="Harsh Solanki <Harsh.Solanki@target.com>"
