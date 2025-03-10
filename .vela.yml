@@ -86,6 +86,73 @@ stages:
         ruleset:
           event: [ pull_request ]
 
+  tests:
+    steps:
+      - name: run_tests
+        secrets: [ docker_password, OAUTH_URL, OAUTH_NUID_USERNAME, OAUTH_NUID_PASSWORD, OAUTH_CLIENT_CREDENTIALS, AZURE_OPENAI_API_KEY, AZURE_OPENAI_API_VERSION, AZURE_OPENAI_ENDPOINT, REDIS_CACHE_USERNAME, REDIS_CACHE_PASSWORD, SECRET_KEY]
+        <<: *python_image
+        commands:
+          - *install_commands
+          - apt-get update
+          # poppler-utils necessary for pdf2image
+          - apt-get install poppler-utils -y
+          - poetry run alembic upgrade head
+          - poetry run coverage run -m pytest
+          - poetry run coverage report -m
+        ruleset:
+          event: [ pull_request ]
+        environment:
+          SERVER_HOST: "127.0.0.1"
+          SERVER_PORT: "8000"
+          ENVIRONMENT: "test"
+          ENDPOINT: "http://localhost:8000"
+          PRIORITY_INGEST: "True"
+          DB_ENTITLEMENT_PROTECTION: "True"
+          LOGGING_LEVEL: "INFO"
+          RELOAD: "False"
+          ADMIN_GROUP: "cn=app-oauth2-cha-admin-non-prod,ou=application,ou=groupings,dc=corp,dc=target,dc=com"
+          DEFAULT_CHUNKING_STRATEGY: "semantic"
+          SUPPORTED_CHUNKING_STRATEGIES: "semantic,markdown,recursive"
+          DEFAULT_EMBEDDING_MODEL: "text-embedding-3-small"
+          SUPPORTED_EMBEDDING_MODELS: "jina-v2-base,text-embedding-ada-002,text-embedding-3-large,text-embedding-3-small"
+          UPLOAD_FORMATS_SUPPORTED: "text,txt,pdf,docx,adoc,md,pptx"
+          METRICS_ENABLED: "False"
+          METRICS_DSN: "https+influxdb://metricsfrontdoor-shared.test.target.com:443"
+          THINKTANK_URL: "https://thinktank.dev.target.com"
+          TOSS_HOST: "https://stage.ttc.toss.target.com"
+          TOSS_ACCESS_KEY: "access_key"
+          TOSS_SECRET_KEY: "secret_key"
+          MAX_RECTANGLE_OVER_IMAGE_INTERSECTION: "0.8"
+          MAX_RECTANGLE_OVER_TABLE_INTERSECTION: "0.4"
+          MAX_TABLE_OVER_RECTANGLE_INTERSECTION: "0.5"
+          MAX_TABLE_OVER_IMAGE_INTERSECTION: "0.5"
+          MAX_TEXT_OVER_RECTANGLE_INTERSECTION: "0.8"
+          MAX_TEXT_OVER_IMAGE_INTERSECTION: "0.8"
+          MAX_TEXT_OVER_TABLE_INTERSECTION: "0.2"
+          MAX_IMAGE_OVER_RECTANGLE_INTERSECTION: "0.8"
+          MAX_IMAGE_OVER_TABLE_INTERSECTION: "0.5"
+          MAX_FILE_SIZE: "10"
+          VISION_TOKEN_LIMIT: "2048"
+          RETRY_COUNT: "3"
+          TEST_ES_INSTANCE_1: "http://elasticsearch:9200"
+          TEST_ES_INSTANCE_2: "http://elasticsearch_store_tm:9200"
+          TEST_ES_INSTANCE_3: "http://elasticsearch_tes:9200"
+          POSTGRES_HOST: "postgres"
+          POSTGRES_PORT: "5432"
+          POSTGRES_DB_NAME: "ragaas"
+          POSTGRES_USER: "postgres"
+          POSTGRES_PASSWORD: "postgres"
+          POSTGRES_DB_SCHEMA: "ragaas"
+          PROFILER_ENABLED: "FALSE"
+          POSTGRES_POOL_SIZE: "50"
+          OPENAI_EMBEDDINGS_BATCH_SIZE: "8"
+          OPENAI_EMBEDDINGS_ENDPOINT: "https://api.openai.com/v1/embeddings"
+          HAM_EMBEDDINGS_ENDPOINT: "https://stgapi-internal.target.com/hosted_ai_models/v1/text/embed?model=jina-v2-base"
+          RERANKERS_RETRIEVAL_SIZE: "3"
+          RERANKERS_BATCH_SIZE: "2"
+          RERANKERS_ENDPOINT: "https://stgapi-internal.target.com/hosted_ai_models/v1/text/rerank?model=bge-reranker-v2-m3"
+          REDIS_CACHE_HOST: "dbaasprod-re-ragcache-de-509001.dev.target.com"
+          RAG_COMMON_DB: "ragcommondb"
 
   build:
     steps:
@@ -99,11 +166,11 @@ stages:
         parameters:
           registry: docker.target.com
           cache: true
-          repo: docker.target.com/app/rag-at-scale
+          repo: docker.target.com/managed/genai-platform/rag-service
           tags:
             - "b${VELA_BUILD_COMMIT:0:8}"
         ruleset:
-          branch: master
+          branch: dev
           event: push
       - name: docker-publish-stage
         image: docker.target.com/vela-plugins/kaniko:v0.16.0-1@sha256:354a456fa38304894abcd110ca138bc89d10f1b38b5f1069f4a7f5c5a32bf2b1
@@ -111,11 +178,11 @@ stages:
         parameters:
           registry: docker.target.com
           cache: true
-          repo: docker.target.com/app/rag-at-scale
+          repo: docker.target.com/managed/genai-platform/rag-service
           tags:
             - "r${VELA_BUILD_COMMIT:0:8}"
         ruleset:
-          branch: master
+          branch: main
           event: push
 
       - name: create_change_request
@@ -141,8 +208,8 @@ stages:
         pull: not_present
         parameters:
           action: docker-promote
-          docker_registry: app/rag-at-scale
-          target_docker_registry: app/rag-at-scale
+          docker_registry: managed/genai-platform/rag-service
+          target_docker_registry: managed/genai-platform/rag-service
           copy: true
           tag: "r${VELA_BUILD_COMMIT:0:8}"
           target_tags: "${VELA_BUILD_TAG}"
@@ -155,7 +222,7 @@ stages:
         ruleset:
           event: tag
           branch: [ main, refs/tags/release-v* ]
-        image: docker.target.com/app/release-tracker:latest
+        image: docker.target.com/managed/genai-platform/release-tracker:latest
         secrets:
           - source: github_token
             target: github_token
@@ -174,76 +241,76 @@ stages:
           api_spec: api-spec/gen_ai_rag_requests-v1.yaml
           post_comments: true
 
-# secrets:
+secrets:
   # Shared secrets for TAP team Docker registry
-  # - name: plugin_spec_token
-  #   key: api-platform/api-platform-team/plugin_spec_token
-  #   type: shared
-  # - name: OAUTH_URL
-  #   key: GenAI-Platform/rag-service/OAUTH_URL
-  #   engine: native
-  #   type: repo
-  # - name: OAUTH_NUID_USERNAME
-  #   key: GenAI-Platform/rag-service/OAUTH_NUID_USERNAME
-  #   engine: native
-  #   type: repo
-  # - name: OAUTH_NUID_PASSWORD
-  #   key: GenAI-Platform/rag-service/OAUTH_NUID_PASSWORD
-  #   engine: native
-  #   type: repo
-  # - name: OAUTH_CLIENT_CREDENTIALS
-  #   key: GenAI-Platform/rag-service/OAUTH_CLIENT_CREDENTIALS
-  #   engine: native
-  #   type: repo
-  # - name: AZURE_OPENAI_API_KEY
-  #   key: GenAI-Platform/rag-service/AZURE_OPENAI_API_KEY
-  #   engine: native
-  #   type: repo
-  # - name: AZURE_OPENAI_API_VERSION
-  #   key: GenAI-Platform/rag-service/AZURE_OPENAI_API_VERSION
-  #   engine: native
-  #   type: repo
-  # - name: AZURE_OPENAI_ENDPOINT
-  #   key: GenAI-Platform/rag-service/AZURE_OPENAI_ENDPOINT
-  #   engine: native
-  #   type: repo
-  # - name: api_key
-  #   key: GenAI-Platform/api_key
-  #   engine: native
-  #   type: org
-  # - name: client_id
-  #   key: GenAI-Platform/client_id
-  #   engine: native
-  #   type: org
-  # - name: client_secret
-  #   key: GenAI-Platform/client_secret
-  #   engine: native
-  #   type: org
-  # - name: nuid_username
-  #   key: GenAI-Platform/nuid_username
-  #   engine: native
-  #   type: org
-  # - name: nuid_password
-  #   key: GenAI-Platform/nuid_password
-  #   engine: native
-  #   type: org
-  # - name: REDIS_CACHE_USERNAME
-  #   key: GenAI-Platform/rag-service/REDIS_CACHE_USERNAME
-  #   engine: native
-  #   type: repo
-  # - name: REDIS_CACHE_PASSWORD
-  #   key: GenAI-Platform/rag-service/REDIS_CACHE_PASSWORD
-  #   engine: native
-  #   type: repo
-  # - name: SECRET_KEY
-  #   key: GenAI-Platform/rag-service/SECRET_KEY
-  #   engine: native
-  #   type: repo
-  # - name: github_token
-  #   key: GenAI-Platform/github_token
-  #   engine: native
-  #   type: org
-  # - name: release_slack_webhook
-  #   key: GenAI-Platform/release_slack_webhook
-  #   engine: native
-  #   type: org
+  - name: plugin_spec_token
+    key: api-platform/api-platform-team/plugin_spec_token
+    type: shared
+  - name: OAUTH_URL
+    key: GenAI-Platform/rag-service/OAUTH_URL
+    engine: native
+    type: repo
+  - name: OAUTH_NUID_USERNAME
+    key: GenAI-Platform/rag-service/OAUTH_NUID_USERNAME
+    engine: native
+    type: repo
+  - name: OAUTH_NUID_PASSWORD
+    key: GenAI-Platform/rag-service/OAUTH_NUID_PASSWORD
+    engine: native
+    type: repo
+  - name: OAUTH_CLIENT_CREDENTIALS
+    key: GenAI-Platform/rag-service/OAUTH_CLIENT_CREDENTIALS
+    engine: native
+    type: repo
+  - name: AZURE_OPENAI_API_KEY
+    key: GenAI-Platform/rag-service/AZURE_OPENAI_API_KEY
+    engine: native
+    type: repo
+  - name: AZURE_OPENAI_API_VERSION
+    key: GenAI-Platform/rag-service/AZURE_OPENAI_API_VERSION
+    engine: native
+    type: repo
+  - name: AZURE_OPENAI_ENDPOINT
+    key: GenAI-Platform/rag-service/AZURE_OPENAI_ENDPOINT
+    engine: native
+    type: repo
+  - name: api_key
+    key: GenAI-Platform/api_key
+    engine: native
+    type: org
+  - name: client_id
+    key: GenAI-Platform/client_id
+    engine: native
+    type: org
+  - name: client_secret
+    key: GenAI-Platform/client_secret
+    engine: native
+    type: org
+  - name: nuid_username
+    key: GenAI-Platform/nuid_username
+    engine: native
+    type: org
+  - name: nuid_password
+    key: GenAI-Platform/nuid_password
+    engine: native
+    type: org
+  - name: REDIS_CACHE_USERNAME
+    key: GenAI-Platform/rag-service/REDIS_CACHE_USERNAME
+    engine: native
+    type: repo
+  - name: REDIS_CACHE_PASSWORD
+    key: GenAI-Platform/rag-service/REDIS_CACHE_PASSWORD
+    engine: native
+    type: repo
+  - name: SECRET_KEY
+    key: GenAI-Platform/rag-service/SECRET_KEY
+    engine: native
+    type: repo
+  - name: github_token
+    key: GenAI-Platform/github_token
+    engine: native
+    type: org
+  - name: release_slack_webhook
+    key: GenAI-Platform/release_slack_webhook
+    engine: native
+    type: org
