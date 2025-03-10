@@ -1,6 +1,161 @@
 from platform_commons.models.error_response import ErrorResponse
 
 
+class OpenAIRequestError(Exception):
+    """
+    This exception is raised when there are request errors to openai
+    """
+
+    def __init__(self, e: Exception):
+        self.reason = f"There was an error with making a request to OpenAI. Error{str(e)}"
+        super().__init__(self.reason)
+
+
+def openai_request_error_to_error_response(
+    error: OpenAIRequestError,
+) -> ErrorResponse:
+    """
+    Translates a OpenAIRequestError into an ErrorResponse for logging
+    and building web responses in a consistent way.
+
+    Args:
+        error (OpenAIRequestError): the error to translate
+
+    Returns:
+        ErrorResponse: an error response for use in logging and building web response
+    """
+
+    return ErrorResponse(
+        message=error.reason,
+        error_type="Internal Server Error",
+        code="openai_request_error",
+    )
+
+class OpenAIResponseError(Exception):
+    """
+    This exception is raised when there are non-200 response status codes
+    """
+
+    def __init__(self, status_code: int):
+        self.reason = f"Response from openai returned the following status_code: {status_code}"
+        super().__init__(self.reason)
+
+
+def openai_response_error_to_error_response(
+    error: OpenAIResponseError,
+) -> ErrorResponse:
+    """
+    Translates a OpenAIResponseError into an ErrorResponse for logging
+    and building web responses in a consistent way.
+
+    Args:
+        error (OpenAIResponseError): the error to translate
+
+    Returns:
+        ErrorResponse: an error response for use in logging and building web response
+    """
+
+    return ErrorResponse(
+        message=error.reason,
+        error_type="Internal Server Error",
+        code="openai_response_error",
+    )
+
+class ThinktankRequestError(Exception):
+    """
+    This exception is raised when there are request errors to thinktank
+    """
+
+    def __init__(self, e: Exception):
+        self.reason = f"There was an error with making a request to ThinkTank. Error{str(e)}"
+        super().__init__(self.reason)
+
+
+def thinktank_request_error_to_error_response(
+    error: ThinktankRequestError,
+) -> ErrorResponse:
+    """
+    Translates a ThinktankRequestError into an ErrorResponse for logging
+    and building web responses in a consistent way.
+
+    Args:
+        error (ThinktankRequestError): the error to translate
+
+    Returns:
+        ErrorResponse: an error response for use in logging and building web response
+    """
+
+    return ErrorResponse(
+        message=error.reason,
+        error_type="Internal Server Error",
+        code="thinktank_request_error",
+    )
+
+class ThinktankResponseError(Exception):
+    """
+    This exception is raised when there are non-200 response status codes
+    """
+
+    def __init__(self, status_code: int):
+        self.status_code = status_code
+        self.reason = f"Response to thinktank returned the following status_code: {status_code}"
+        super().__init__(self.reason)
+
+
+def thinktank_response_error_to_error_response(
+    error: ThinktankResponseError,
+) -> ErrorResponse:
+    """
+    Translates a ThinktankResponseError into an ErrorResponse for logging
+    and building web responses in a consistent way.
+
+    Args:
+        error (ThinktankResponseError): the error to translate
+
+    Returns:
+        ErrorResponse: an error response for use in logging and building web response
+    """
+
+    return ErrorResponse(
+        message=error.reason,
+        error_type="Internal Server Error",
+        code="thinktank_response_error",
+    )
+
+
+class RateLimitError(Exception):
+    """
+    This exception is raised when there are request errors to a model provider
+    """
+
+    def __init__(self, router: str, model: str):
+        self.reason = (
+            f"We have reached our rate limit with the model provider for model {model} "
+            f"through router {router}. Please try again after some time."
+        )
+        super().__init__(self.reason)
+
+
+def ratelimit_error_to_error_response(
+    error: RateLimitError,
+) -> ErrorResponse:
+    """
+    Translates a RateLimitError into an ErrorResponse for logging
+    and building web responses in a consistent way.
+
+    Args:
+        error (RateLimitError): the error to translate
+
+    Returns:
+        ErrorResponse: an error response for use in logging and building web response
+    """
+
+    return ErrorResponse(
+        message=error.reason,
+        error_type="Internal Server Error",
+        code="rate_limit_error",
+    )
+
 class HAMResponseError(Exception):
     """
     This exception is raised when there are non-200 response status codes returned from HAM
