@@ -99,7 +99,7 @@ stages:
         parameters:
           registry: docker.target.com
           cache: true
-          repo: docker.target.com/managed/genai-platform/rag-at-scale
+          repo: docker.target.com/app/genai-platform/rag-at-scale
           tags:
             - "b${VELA_BUILD_COMMIT:0:8}"
         ruleset:
@@ -111,7 +111,7 @@ stages:
         parameters:
           registry: docker.target.com
           cache: true
-          repo: docker.target.com/managed/genai-platform/rag-at-scale
+          repo: docker.target.com/app/genai-platform/rag-at-scale
           tags:
             - "r${VELA_BUILD_COMMIT:0:8}"
         ruleset:
@@ -141,8 +141,8 @@ stages:
         pull: not_present
         parameters:
           action: docker-promote
-          docker_registry: managed/genai-platform/rag-at-scale
-          target_docker_registry: managed/genai-platform/rag-at-scale
+          docker_registry: app/rag-at-scale
+          target_docker_registry: app/rag-at-scale
           copy: true
           tag: "r${VELA_BUILD_COMMIT:0:8}"
           target_tags: "${VELA_BUILD_TAG}"
@@ -155,7 +155,7 @@ stages:
         ruleset:
           event: tag
           branch: [ main, refs/tags/release-v* ]
-        image: docker.target.com/managed/genai-platform/release-tracker:latest
+        image: docker.target.com/app/release-tracker:latest
         secrets:
           - source: github_token
             target: github_token
