@@ -86,6 +86,7 @@ stages:
         ruleset:
           event: [ pull_request ]
 
+
   build:
     steps:
       - name: populate_docker_credentials
