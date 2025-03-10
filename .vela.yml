@@ -178,14 +178,14 @@ stages:
         parameters:
           registry: docker.target.com
           cache: true
-          repo: docker.target.com/managed/genai-platform/rag-service
+          repo: docker.target.com/managed/genai-platform/rag-at-scale
           tags:
             - "r${VELA_BUILD_COMMIT:0:8}"
         ruleset:
           branch: main
           event: push
 
-          
+
 
       - name: create_change_request
         image: docker.target.com/toolshed/vela-change-request:4.1.1
@@ -210,8 +210,8 @@ stages:
         pull: not_present
         parameters:
           action: docker-promote
-          docker_registry: managed/genai-platform/rag-service
-          target_docker_registry: managed/genai-platform/rag-service
+          docker_registry: managed/genai-platform/rag-at-scale
+          target_docker_registry: managed/genai-platform/rag-at-scale
           copy: true
           tag: "r${VELA_BUILD_COMMIT:0:8}"
           target_tags: "${VELA_BUILD_TAG}"
