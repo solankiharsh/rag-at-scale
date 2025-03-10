@@ -164,7 +164,7 @@ class Pipeline:
                 logger.error(f"Error processing document {cloud_file.id}: {e}", exc_info=True)
                 raise
 
-    def embed_and_ingest(self, chunks: list[RagDocument]) -> int:
+    async def embed_and_ingest(self, chunks: list[RagDocument]) -> int:
         """
         Embeds document chunks and ingests them into the sink.
         """
@@ -175,7 +175,13 @@ class Pipeline:
         ):
             raise AttributeError("'Pipeline' object has no valid 'embed_model' instance.")
 
-        vector_embeddings, _ = asyncio.run(self.embed_model.embed(documents=chunks))
+        if asyncio.get_event_loop().is_running():
+            # If already in an event loop, use `await`
+            vector_embeddings, _ = await self.embed_model.embed(documents=chunks)
+        else:
+            # If no event loop is running, use `asyncio.run()`
+            vector_embeddings, _ = asyncio.run(self.embed_model.embed(documents=chunks))
+        
         logger.info("Embeddings generated successfully.")
 
         vectors_to_store = [

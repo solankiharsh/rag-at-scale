@@ -17,7 +17,7 @@ app = Celery("tasks", broker=config.REDIS_BROKER_URL)
 @app.task
 def data_extraction_task(pipeline_config_dict: dict, extract_type: str, last_extraction=None):
     pipeline = Pipeline.create_pipeline(pipeline_config_dict)
-    logger.info(f"pipeline_config_dict: {pipeline_config_dict}")
+    # logger.info(f"pipeline_config_dict: {pipeline_config_dict}")
     for source, cloud_file in pipeline.run_extraction(
         extract_type=extract_type, last_extraction=last_extraction
     ):
@@ -39,7 +39,6 @@ def data_processing_task(
     try:
         logger.info("Starting data processing task")
         pipeline = Pipeline.create_pipeline(pipeline_config_dict)
-        logger.debug(f"Pipeline initialized with config: {pipeline_config_dict}")
 
         source = SourceConnector.create_source(SourceConfigSchema(**source_config_dict))
         logger.debug(f"Source config: {source_config_dict}")
@@ -89,9 +88,10 @@ def data_processing_task(
 @app.task
 def data_embed_ingest_task(pipeline_config_dict: dict, chunks_dicts: list[dict]):
     pipeline = Pipeline.create_pipeline(pipeline_config_dict)
+    logger.info(f"chunks_dicts: {chunks_dicts}")
     chunks: list[RagDocument] = [RagDocument.as_file(chunk_dict) for chunk_dict in chunks_dicts]
 
-    logger.info(f"chunks: {chunks}")
+    
 
     vectors_written = pipeline.embed_and_ingest(chunks)  # Now pipeline handles embed and ingest
     print(f"Finished embedding and storing {vectors_written} vectors")
