@@ -15,7 +15,7 @@ It provides you a comprehensive solution for RAG that can scale with your applic
 
 ## Features
 
-- 🏭 **High throughput distrubted architecture** to handle billions of data points. Allows high degrees of parallelization to optimize embedding generation and ingestion.
+- 🏭 **High throughput distrubted architecture** to handle lot of data. Allows high degrees of parallelization to optimize embedding generation and ingestion.
 - 🧱 **Data connectors** to common data sources, embedding services and vector stores.
 
 ## Getting Started
