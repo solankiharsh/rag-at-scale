@@ -18,7 +18,7 @@ COPY . ./
 RUN poetry config virtualenvs.create false
 
 # (Optional) Clear Poetry cache to remove any old cached files that might conflict
-RUN poetry cache clear --all pypi
+# RUN poetry cache clear --all pypi
 
 # Install dependencies via Poetry (without dev dependencies)
 RUN poetry install --no-interaction --no-ansi
