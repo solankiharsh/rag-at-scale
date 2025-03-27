@@ -4,11 +4,11 @@
 import nltk
 from fastapi import FastAPI, HTTPException
 
+from hatchet_instance import hatchet
 from src.ModelFactories.EmbedConnectorFactory import EmbedConnectorFactory
 from src.ModelFactories.SinkConnectorFactory import SinkConnectorFactory
 from src.Shared.pipeline_config_schema import PipelineConfigSchema
 from src.Shared.RagDocument import RagDocument
-from tasks import data_extraction_task
 from utils.platform_commons.logger import logger
 
 # /Users/Z0084K9/nltk_data/corpora/stopwords
@@ -19,50 +19,18 @@ nltk.download("averaged_perceptron_tagger")
 app = FastAPI()
 
 # --- API Endpoints ---
-
-# In-memory storage for pipeline configurations (replace with DB in production)
+# In-memory storage for pipeline configurations
 pipeline_configs: dict[str, PipelineConfigSchema] = {}
-
 
 @app.post("/pipelines/", response_model=PipelineConfigSchema, status_code=201)
 async def create_pipeline(pipeline_config: PipelineConfigSchema):
     pipeline_id = pipeline_config.id
-    logger.info(f"Received request to create pipeline with ID: {pipeline_id}")
-
+    print(f"Creating pipeline with ID: {pipeline_id}")
     if pipeline_id in pipeline_configs:
-        logger.warning(f"Pipeline ID '{pipeline_id}' already exists.")
         raise HTTPException(status_code=400, detail="Pipeline ID already exists")
-
-    logger.info(f"pipeline_config: {pipeline_config}")
-
-    # Extract Elasticsearch settings
-    index_name = pipeline_config.sink.settings.get("index")
-    host = pipeline_config.sink.settings.get("hosts")
-
-    if host and isinstance(host, list):
-        host = host[0]
-
-    logger.info(f"Extracted index_name: {index_name}, host: {host}")
-
-    if not host or not index_name:
-        logger.error("Elasticsearch host or index name is missing")
-        raise HTTPException(status_code=400, detail="Elasticsearch host or index name is missing")
-
-    # Initialize and store the pipeline
-    try:
-        logger.info(f"Initializing pipeline with ID: {pipeline_id}")
-        pipeline_configs[pipeline_id] = pipeline_config
-        logger.info(f"Pipeline initialized for ID: {pipeline_id}")
-
-        pipeline_configs[pipeline_id] = pipeline_config
-        logger.info(f"Pipeline configuration saved for ID: {pipeline_id}")
-
-        return pipeline_config
-
-    except Exception as e:
-        logger.error(f"Failed to initialize pipeline '{pipeline_id}': {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to initialize pipeline: {str(e)}")
-
+    pipeline_configs[pipeline_id] = pipeline_config
+    print(f"Pipeline created: {pipeline_config}")
+    return pipeline_config
 
 @app.get("/pipelines/{pipeline_id}", response_model=PipelineConfigSchema)
 async def get_pipeline(pipeline_id: str):
@@ -70,42 +38,60 @@ async def get_pipeline(pipeline_id: str):
         raise HTTPException(status_code=404, detail="Pipeline not found")
     return pipeline_configs[pipeline_id]
 
+# @app.post("/pipelines/{pipeline_id}/run")
+# async def run_pipeline(pipeline_id: str, extract_type: str = "full"):
+#     logger.info(f"Triggering pipeline '{pipeline_id}' with extract type '{extract_type}'")
+
+#     if pipeline_id not in pipeline_configs:
+#         raise HTTPException(status_code=404, detail="Pipeline not found")
+
+#     pipeline_config = pipeline_configs[pipeline_id]
+
+#     # Extract Elasticsearch settings from sink.settings
+#     index_name = pipeline_config.sink.settings.get("index")
+#     host = pipeline_config.sink.settings.get("hosts")
+#     if host and isinstance(host, list):
+#         host = host[0]
+
+#     logger.info(f"Extracted Elasticsearch settings - index: {index_name}, host: {host}")
+
+#     if not host or not index_name:
+#         logger.error("Elasticsearch host or index name is missing")
+#         raise HTTPException(status_code=400, detail="Elasticsearch host or index name is missing")
+
+#     if extract_type not in ["full", "delta"]:
+#         raise HTTPException(
+#             status_code=400, detail="Invalid extract_type. Must be 'full' or 'delta'."
+#         )
+
+#     task = data_extraction_task.apply_async(
+#         kwargs={"pipeline_config_dict": pipeline_config.dict(), "extract_type": extract_type},
+#         queue="data_extraction",
+#     )
+#     return {
+#         "message": (
+#             f"Pipeline '{pipeline_id}' run triggered for extraction type "
+#             f"'{extract_type}'. Task ID: {task.id}"
+#         )
+#     }
 
 @app.post("/pipelines/{pipeline_id}/run")
 async def run_pipeline(pipeline_id: str, extract_type: str = "full"):
-    logger.info(f"Triggering pipeline '{pipeline_id}' with extract type '{extract_type}'")
-
+    print(f"Running pipeline with ID: {pipeline_id}")
     if pipeline_id not in pipeline_configs:
         raise HTTPException(status_code=404, detail="Pipeline not found")
-
     pipeline_config = pipeline_configs[pipeline_id]
 
-    # Extract Elasticsearch settings from sink.settings
-    index_name = pipeline_config.sink.settings.get("index")
-    host = pipeline_config.sink.settings.get("hosts")
-    if host and isinstance(host, list):
-        host = host[0]
-
-    logger.info(f"Extracted Elasticsearch settings - index: {index_name}, host: {host}")
-
-    if not host or not index_name:
-        logger.error("Elasticsearch host or index name is missing")
-        raise HTTPException(status_code=400, detail="Elasticsearch host or index name is missing")
-
-    if extract_type not in ["full", "delta"]:
-        raise HTTPException(
-            status_code=400, detail="Invalid extract_type. Must be 'full' or 'delta'."
-        )
-
-    task = data_extraction_task.apply_async(
-        kwargs={"pipeline_config_dict": pipeline_config.dict(), "extract_type": extract_type},
-        queue="data_extraction",
-    )
+    workflow_input = {
+        "pipeline_config_dict": pipeline_config.dict(),
+        "extract_type": extract_type
+    }
+    print(f"Triggering pipeline workflow with input: {workflow_input}")
+    # Trigger the Hatchet workflow asynchronously.
+    workflowRun = await hatchet.client.admin.aio.run_workflow("PipelineWorkflow", workflow_input)
     return {
-        "message": (
-            f"Pipeline '{pipeline_id}' run triggered for extraction type "
-            f"'{extract_type}'. Task ID: {task.id}"
-        )
+        "message": f"Pipeline '{pipeline_id}' run triggered with extraction type '{extract_type}'.",
+        "workflow_run_id": workflowRun.workflow_run_id
     }
 
 
@@ -180,7 +166,7 @@ async def get_documents(pipeline_id: str, size: int = 10):
         raise HTTPException(status_code=500, detail=f"Failed to retrieve documents: {str(e)}")
 
 
+
 if __name__ == "__main__":
     import uvicorn
-
     uvicorn.run(app, host="0.0.0.0", port=8000)

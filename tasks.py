@@ -4,7 +4,7 @@ from celery import Celery
 from elasticsearch import NotFoundError
 
 from config import config
-from src.Pipelines.Pipeline import Pipeline
+from src.Pipelines.IngestPipeline import Pipeline
 from src.Shared.CloudFile import CloudFileSchema
 from src.Shared.RagDocument import RagDocument
 from src.Shared.source_config_schema import SourceConfigSchema
