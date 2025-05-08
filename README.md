@@ -1,5 +1,3 @@
-# rag-at-scale
-
 <h1 align="center">Rag-at-Scale</h1>
 
 <div align="center">
@@ -8,14 +6,14 @@
   
 </div>
 
-Core library with Rag AI components to connect, load, chunk and sink vector embeddings. **[rag-at-scale](https://tap.prod.platform.target.com/) is a data platform that helps developers leverage their data to contextualize Large Language Models through Retrieval Augmented Generation (RAG)** This includes
+Core library with Rag AI components to connect, load, chunk and sink vector embeddings. **[Rag-at-Scale](https://tap.prod.platform.target.com/) is a data platform that helps developers leverage their data to contextualize Large Language Models through Retrieval Augmented Generation (RAG).** This includes
 extracting data from existing data sources like document storage and NoSQL, processing the contents into vector embeddings and ingesting the vector embeddings into vector databases for similarity search.
 
 It provides you a comprehensive solution for RAG that can scale with your application and reduce the time spent integrating services like data connectors, embedding models and vector databases.
 
 ## Features
 
-- 🏭 **High throughput distrubted architecture** to handle lot of data. Allows high degrees of parallelization to optimize embedding generation and ingestion.
+- 🏭 **High throughput distributed architecture** to handle lots of data. Allows high degrees of parallelization to optimize embedding generation and ingestion.
 - 🧱 **Data connectors** to common data sources, embedding services and vector stores.
 
 ## Getting Started
@@ -30,58 +28,62 @@ pip install rag_at_scale
 
 This repo contains a sample of a distributed architecture solution using Celery and Redis Queues. By design, rag-at-scale framework provides constructs to parallelize workloads in order to process larger data sets.
 
-## Getting started
+### Development Setup
 
 To leverage this repo, you will need to install dependencies:
 
-```
+```bash
 pip install -r requirements.txt
 ```
 
 In addition:
-- Install the  the [redis CLI](https://redis.io/docs/install/install-redis/install-redis-on-linux/) to run it locally.
-- You will need an Open AI API Key for the OpenAI embedding model. To get an API Key visit **[OpenAI](https://platform.openai.com/signup)**. Make sure you have configured billing for the account.
-- You will need a local Elastich Search DB for the Elasticsearch vector database.
+- Install the [Redis CLI](https://redis.io/docs/install/install-redis/install-redis-on-linux/) to run it locally.
+- You will need an OpenAI API Key for the OpenAI embedding model. To get an API Key visit **[OpenAI](https://platform.openai.com/signup)**. Make sure you have configured billing for the account.
+- You will need a local Elasticsearch DB for the Elasticsearch vector database.
 
-## Configure connectors
+## Configure Connectors
 
-In the `app.py` file, you have the API endpoints for pipeline processing.
+In the [`app.py`](./app.py) file, you have the API endpoints for pipeline processing.
 
-## Run it locally
+## Run It Locally
 
-To get everything ready to run this solution, we first need to get our `redis` queues running. To do this, we will use the `redis` CLI:
+To get everything ready to run this solution, we first need to get our Redis queues running. To do this, we will use the Redis CLI:
 
-```python
+```bash
 sudo service redis-server start
 ```
 
-Once we have the `redis` queues running, we can now start our `Celery` based workers. We will have each running on its own command line.
+Once we have the Redis queues running, we can now start our Celery-based workers. We will have each running on its own command line.
 
 **data_extraction worker**
 
-```python
+```bash
 celery -A tasks worker --concurrency 1 -Q data_extraction
 ```
 
 **data_processing worker**
 
-```python
+```bash
 celery -A tasks worker --concurrency 1 -Q data_processing
 ```
 
 **data_embed_ingest worker**
 
-```python
+```bash
 celery -A tasks worker --concurrency 1 -Q data_embed_ingest
 ```
 
-Once everything is running, we can now trigger out pipeline. This will distribute the tasks from it into the different queues as it processes the data.
+Once everything is running, we can now trigger our pipeline. This will distribute the tasks into the different queues as it processes the data.
 
-```python
+```bash
 make start
 ```
 
-```json
+### Example API Calls
+
+#### Create a Pipeline
+
+```python
 import requests
 
 url = "http://127.0.0.1:8000/pipelines"
@@ -131,7 +133,9 @@ response = requests.request("POST", url, json=payload, headers=headers)
 print(response.text)
 ```
 
-```json
+#### Run a Pipeline
+
+```python
 import requests
 
 url = "http://127.0.0.1:8000/pipelines/pipeline-002/run"
@@ -144,7 +148,9 @@ response = requests.request("POST", url, data=payload, params=querystring)
 print(response.text)
 ```
 
-```json
+#### Search Using a Pipeline
+
+```python
 import requests
 
 url = "http://127.0.0.1:8000/pipelines/pipeline-002/search"
@@ -157,7 +163,9 @@ response = requests.request("POST", url, data=payload, params=querystring)
 print(response.text)
 ```
 
-```json
+#### Get Documents from a Pipeline
+
+```python
 import requests
 
 url = "http://localhost:8000/pipelines/pipeline-002/documents"
@@ -172,3 +180,11 @@ response = requests.request("GET", url, json=payload, headers=headers)
 
 print(response.text)
 ```
+
+## Contributing
+
+Contributions to Rag-at-Scale are welcome! Feel free to submit issues or pull requests to help improve the framework.
+
+## License
+
+This project is licensed under the terms specified in the repository.
